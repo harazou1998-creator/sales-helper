@@ -593,6 +593,54 @@
     .places-sub { font-size: 11px; color: var(--t3); margin-top: 2px; }
     .places-loading { padding: 12px; text-align: center; font-size: 13px; color: var(--t3); }
 
+    /* AI Assistant bubble (in modal) */
+    .ai-bubble {
+      display: none;
+      gap: 10px;
+      align-items: flex-start;
+      background: #F0F9FF;
+      border: 1.5px solid #7DD3FC;
+      border-radius: 16px 16px 16px 4px;
+      padding: 12px 14px;
+      margin-bottom: 12px;
+    }
+    .ai-bubble.show { display: flex; }
+    .ai-avatar-icon {
+      width: 34px; height: 34px;
+      background: linear-gradient(135deg, #3B82F6, #8B5CF6);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; flex-shrink: 0;
+    }
+    .ai-bubble-inner { flex: 1; min-width: 0; }
+    .ai-bubble-name { font-size: 10px; font-weight: 700; color: #0369A1; margin-bottom: 3px; letter-spacing: 0.04em; }
+    .ai-bubble-msg { font-size: 13px; color: #0C4A6E; line-height: 1.65; }
+    .ai-bubble-msg strong { color: #1D4ED8; }
+
+    /* AI Home Card */
+    .ai-home-card {
+      display: none;
+      background: linear-gradient(135deg, #1E293B 0%, #1E3A8A 100%);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      margin-bottom: 12px;
+      gap: 12px;
+      align-items: flex-start;
+    }
+    .ai-home-card.show { display: flex; }
+    .ai-home-avatar {
+      width: 38px; height: 38px;
+      background: rgba(255,255,255,0.15);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px; flex-shrink: 0;
+    }
+    .ai-home-content { flex: 1; color: white; }
+    .ai-home-name { font-size: 10px; font-weight: 700; color: rgba(255,255,255,0.45); margin-bottom: 5px; letter-spacing: 0.06em; }
+    .ai-home-msg { font-size: 13px; line-height: 1.75; }
+    .ai-home-msg .warn { color: #FCD34D; font-weight: 700; }
+    .ai-home-msg .ok { color: #6EE7B7; font-weight: 600; }
+
     /* Previous appointment suggestion banner */
     .prev-appt-banner {
       background: #F0F9FF;
@@ -697,6 +745,14 @@
       通知を有効にするには <strong>⚙️設定</strong> を確認してください。
     </div>
     <div id="notifBanner"></div>
+    <!-- AI Assistant Home Card -->
+    <div class="ai-home-card" id="aiHomeCard">
+      <div class="ai-home-avatar">🤖</div>
+      <div class="ai-home-content">
+        <div class="ai-home-name">AI ASSISTANT</div>
+        <div class="ai-home-msg" id="aiHomeMsg"></div>
+      </div>
+    </div>
     <div id="dashAlerts"></div>
     <div class="dash-hero" id="dashHero"></div>
     <div class="stats-row" id="dashStats"></div>
@@ -827,6 +883,15 @@
           <input class="form-input" type="time" id="apptTime" onchange="checkPrevApptSuggestion()" />
         </div>
       </div>
+      <!-- AI Assistant Warning -->
+      <div class="ai-bubble" id="aiApptBubble">
+        <div class="ai-avatar-icon">🤖</div>
+        <div class="ai-bubble-inner">
+          <div class="ai-bubble-name">AI ASSISTANT</div>
+          <div class="ai-bubble-msg" id="aiApptMsg"></div>
+        </div>
+      </div>
+
       <div class="form-group">
         <label class="form-label">所要時間</label>
         <div class="duration-picker" id="durationPicker">
@@ -1294,9 +1359,61 @@ function renderHome() {
   renderHero();
   renderDashStats();
   renderDashAlerts();
+  renderAiHomeInsights();
   renderDashToday();
   renderDashAfter();
   updateBadges();
+}
+
+function renderAiHomeInsights() {
+  const card = document.getElementById('aiHomeCard');
+  const msg = document.getElementById('aiHomeMsg');
+  if (!card || !msg) return;
+
+  const today = todayStr();
+  const todayAppts = appointments
+    .filter(a => a.date === today && a.status === 'plan' && a.time)
+    .sort((a, b) => timeToMin(a.time) - timeToMin(b.time));
+
+  if (todayAppts.length === 0) {
+    card.classList.remove('show');
+    return;
+  }
+
+  const warnings = [];
+  // アポ間の移動時間チェック
+  for (let i = 0; i < todayAppts.length - 1; i++) {
+    const a = todayAppts[i];
+    const b = todayAppts[i + 1];
+    const aEnd = timeToMin(a.time) + (a.duration || 60);
+    const gap = timeToMin(b.time) - aEnd;
+    if (gap < 30) {
+      warnings.push(`<span class="warn">⚠️ ${minToTime(aEnd)}〜${b.time} の移動 ${gap}分</span>（「${escH(a.title.slice(0,10))}」→「${escH(b.title.slice(0,10))}」）`);
+    }
+  }
+
+  let text = '';
+  if (warnings.length > 0) {
+    text = `本日 <strong style="color:white;">${todayAppts.length}件</strong> のアポイント。移動時間に注意が必要です：<br>${warnings.join('<br>')}`;
+  } else {
+    const now = new Date();
+    const upcoming = todayAppts.filter(a => new Date(`${a.date}T${a.time}:00`) > now);
+    if (upcoming.length > 0) {
+      const next = upcoming[0];
+      const dep = next.travelMin ? calcDepart(next.date, next.time, next.travelMin) : null;
+      const minUntil = dep ? minutesUntil(next.date, dep) : minutesUntil(next.date, next.time);
+      if (minUntil !== null && minUntil >= 0 && minUntil <= 60) {
+        text = `<span class="${minUntil <= 20 ? 'warn' : 'ok'}">次のアポまであと ${minUntil}分</span>${dep ? `。出発時刻：<strong style="color:white;">${dep}</strong>` : ''}`;
+      } else {
+        text = `本日 <span class="ok">${todayAppts.length}件</span> のアポイント。スケジュールに問題はありません ✅`;
+      }
+    } else {
+      text = `本日のアポイントはすべて完了。<span class="ok">お疲れ様でした！</span>`;
+    }
+  }
+
+  msg.innerHTML = text;
+  card.classList.add('show');
 }
 
 function renderHero() {
@@ -1758,6 +1875,7 @@ function openApptModal(id) {
     }
   }
   document.getElementById('placesDropdown').style.display = 'none';
+  document.getElementById('aiApptBubble').classList.remove('show');
   openModal('apptModal');
 }
 
@@ -1817,38 +1935,62 @@ function checkPrevApptSuggestion() {
   const time = document.getElementById('apptTime').value;
   const editId = document.getElementById('apptId').value;
   const banner = document.getElementById('prevApptBanner');
+  const aiBubble = document.getElementById('aiApptBubble');
+  const aiMsg = document.getElementById('aiApptMsg');
 
-  if (!date || !time) { banner.classList.remove('show'); return; }
+  if (!date || !time) {
+    banner.classList.remove('show');
+    aiBubble.classList.remove('show');
+    return;
+  }
 
   // 同じ日で、新しいアポより前に終わる直近のアポを探す
   const sameDay = appointments
     .filter(a => a.date === date && a.status === 'plan' && a.id !== editId && a.time)
     .filter(a => {
-      // 前のアポの終了時刻（開始+所要時間）が新アポ開始より前
       const endMin = timeToMin(a.time) + (a.duration || 60);
       return endMin <= timeToMin(time);
     })
-    .sort((a, b) => timeToMin(b.time) - timeToMin(a.time)); // 直近順
+    .sort((a, b) => timeToMin(b.time) - timeToMin(a.time));
 
-  if (!sameDay.length || !sameDay[0].location) {
+  if (!sameDay.length) {
     banner.classList.remove('show');
+    aiBubble.classList.remove('show');
     return;
   }
 
   const prev = sameDay[0];
-  const endTime = minToTime(timeToMin(prev.time) + (prev.duration || 60));
+  const endMin = timeToMin(prev.time) + (prev.duration || 60);
+  const endTime = minToTime(endMin);
+  const gapMin = timeToMin(time) - endMin;
+
+  // AI アシスタントの移動時間警告
+  let aiText = '';
+  if (gapMin < 20) {
+    aiText = `⚠️ <strong>${prev.time}〜${endTime}</strong>「${escH(prev.title)}」が終わります。次のアポまで <strong class="warn" style="color:#DC2626;">${gapMin}分</strong> しかありません！移動時間が足りない可能性があります。`;
+  } else if (gapMin < 45) {
+    aiText = `🚃 前のアポ「<strong>${escH(prev.title)}</strong>」が <strong>${endTime}</strong> に終わります。次のアポまで <strong>${gapMin}分</strong>。移動時間を確認しましょう。`;
+  } else {
+    aiText = `✅ 前のアポ「<strong>${escH(prev.title)}</strong>」は <strong>${endTime}</strong> 終了。次のアポまで <strong>${gapMin}分</strong> の余裕があります。`;
+  }
+  aiMsg.innerHTML = aiText;
+  aiBubble.classList.add('show');
+
+  // 場所がある場合は出発駅提案バナーも表示
+  if (!prev.location) {
+    banner.classList.remove('show');
+    return;
+  }
+
   prevApptSuggestion = { location: prev.location, title: prev.title, time: prev.time, endTime };
 
-  // 移動時間のGoogle Maps リンク
-  const mapsUrl = prev.location
-    ? `https://www.google.com/maps/dir/${encodeURIComponent(prev.location)}/${encodeURIComponent(document.getElementById('apptLocation').value || '')}/`
-    : null;
+  const mapsUrl = `https://www.google.com/maps/dir/${encodeURIComponent(prev.location)}/${encodeURIComponent(document.getElementById('apptLocation').value || '')}/`;
 
   document.getElementById('prevApptBannerBody').innerHTML = `
     <strong>${prev.time}〜${endTime}</strong> ${escH(prev.title)}<br>
     📍 ${escH(prev.location)}<br>
     <span style="color:#0369A1;">↓ この場所を出発駅として設定しますか？</span>
-    ${mapsUrl && document.getElementById('apptLocation').value
+    ${document.getElementById('apptLocation').value
       ? `<br><a href="${mapsUrl}" target="_blank" style="color:#0369A1;font-size:11px;">🗺 Google Mapsで移動時間を確認</a>`
       : ''}
   `;
@@ -1918,14 +2060,16 @@ async function searchPlaces(query) {
       dropdown.innerHTML = '<div class="places-loading">候補が見つかりません</div>';
       return;
     }
-    dropdown.innerHTML = data.map(p => {
+    dropdown.innerHTML = '';
+    data.forEach(p => {
       const name = p.namedetails?.name || p.display_name.split(',')[0];
       const addr = p.display_name;
-      return `<div class="places-item" onclick="selectPlace(${JSON.stringify(escH(name))}, ${JSON.stringify(escH(addr))})">
-        <div class="places-main">${escH(name)}</div>
-        <div class="places-sub">${escH(addr.slice(0, 60))}${addr.length > 60 ? '…' : ''}</div>
-      </div>`;
-    }).join('');
+      const item = document.createElement('div');
+      item.className = 'places-item';
+      item.innerHTML = `<div class="places-main">${escH(name)}</div><div class="places-sub">${escH(addr.slice(0, 60))}${addr.length > 60 ? '…' : ''}</div>`;
+      item.addEventListener('click', () => selectPlace(name, addr));
+      dropdown.appendChild(item);
+    });
   } catch(e) {
     dropdown.innerHTML = '<div class="places-loading">検索エラー</div>';
   }
@@ -2526,4 +2670,3 @@ init();
 </script>
 </body>
 </html>
-
