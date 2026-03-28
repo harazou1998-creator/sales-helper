@@ -566,6 +566,62 @@
       color: var(--primary-d);
     }
 
+    /* Duration picker */
+    .duration-picker { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+    .dur-btn {
+      padding: 6px 12px; border-radius: 20px; border: 1.5px solid var(--border);
+      background: white; font-size: 13px; font-weight: 600; cursor: pointer;
+      color: var(--t2); font-family: inherit; transition: all 0.15s; white-space: nowrap;
+    }
+    .dur-btn.active { background: var(--primary); border-color: var(--primary); color: white; }
+
+    /* Places autocomplete dropdown */
+    .places-wrap { position: relative; }
+    .places-dropdown {
+      position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+      background: white; border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+      box-shadow: var(--shadow-md); z-index: 500; max-height: 220px; overflow-y: auto;
+      display: none;
+    }
+    .places-item {
+      padding: 10px 13px; cursor: pointer; border-bottom: 1px solid var(--border);
+      transition: background 0.1s;
+    }
+    .places-item:last-child { border-bottom: none; }
+    .places-item:active { background: var(--bg); }
+    .places-main { font-size: 14px; font-weight: 600; color: var(--t1); }
+    .places-sub { font-size: 11px; color: var(--t3); margin-top: 2px; }
+    .places-loading { padding: 12px; text-align: center; font-size: 13px; color: var(--t3); }
+
+    /* Previous appointment suggestion banner */
+    .prev-appt-banner {
+      background: #F0F9FF;
+      border: 1.5px solid #7DD3FC;
+      border-radius: var(--radius-sm);
+      padding: 12px 14px;
+      margin-bottom: 12px;
+      display: none;
+    }
+    .prev-appt-banner.show { display: block; }
+    .prev-banner-title { font-size: 12px; font-weight: 700; color: #0369A1; margin-bottom: 4px; }
+    .prev-banner-body { font-size: 13px; color: #0C4A6E; line-height: 1.5; margin-bottom: 10px; }
+    .prev-banner-btns { display: flex; gap: 8px; }
+    .prev-btn-apply {
+      flex: 1; padding: 7px; border-radius: 6px; border: none;
+      background: #0EA5E9; color: white; font-size: 13px; font-weight: 600;
+      cursor: pointer; font-family: inherit;
+    }
+    .prev-btn-dismiss {
+      padding: 7px 12px; border-radius: 6px; border: 1px solid #BAE6FD;
+      background: white; color: #0369A1; font-size: 13px; cursor: pointer; font-family: inherit;
+    }
+
+    /* Gcal connect status */
+    .gcal-status { display: flex; align-items: center; gap: 8px; padding: 10px 0; font-size: 13px; }
+    .gcal-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .gcal-dot.connected { background: var(--success); }
+    .gcal-dot.disconnected { background: var(--t3); }
+
     /* Google Calendar Toast */
     .gcal-toast {
       position: fixed;
@@ -764,17 +820,45 @@
       <div class="form-row">
         <div class="form-group">
           <label class="form-label">日付 *</label>
-          <input class="form-input" type="date" id="apptDate" />
+          <input class="form-input" type="date" id="apptDate" onchange="checkPrevApptSuggestion()" />
         </div>
         <div class="form-group">
           <label class="form-label">時間</label>
-          <input class="form-input" type="time" id="apptTime" />
+          <input class="form-input" type="time" id="apptTime" onchange="checkPrevApptSuggestion()" />
         </div>
       </div>
       <div class="form-group">
-        <label class="form-label">訪問先（住所・駅）</label>
-        <input class="form-input" id="apptLocation" placeholder="例: 渋谷区〇〇 or 渋谷駅" />
+        <label class="form-label">所要時間</label>
+        <div class="duration-picker" id="durationPicker">
+          <button class="dur-btn" data-min="10" onclick="selectDuration(this)">10分</button>
+          <button class="dur-btn" data-min="20" onclick="selectDuration(this)">20分</button>
+          <button class="dur-btn active" data-min="30" onclick="selectDuration(this)">30分</button>
+          <button class="dur-btn" data-min="40" onclick="selectDuration(this)">40分</button>
+          <button class="dur-btn" data-min="50" onclick="selectDuration(this)">50分</button>
+          <button class="dur-btn" data-min="60" onclick="selectDuration(this)">60分</button>
+          <button class="dur-btn" data-min="90" onclick="selectDuration(this)">90分</button>
+          <button class="dur-btn" data-min="120" onclick="selectDuration(this)">120分</button>
+        </div>
+        <input type="hidden" id="apptDuration" value="30" />
       </div>
+      <div class="form-group">
+        <label class="form-label">訪問先（住所・スポット名）</label>
+        <div class="places-wrap">
+          <input class="form-input" id="apptLocation" placeholder="例: 渋谷スクランブルスクエア" autocomplete="off"
+            oninput="onLocationInput(this.value)" onfocus="onLocationInput(this.value)" />
+          <div class="places-dropdown" id="placesDropdown"></div>
+        </div>
+      </div>
+      <!-- 前のアポイント提案バナー -->
+      <div class="prev-appt-banner" id="prevApptBanner">
+        <div class="prev-banner-title">🗺 前のアポイントから移動しますか？</div>
+        <div class="prev-banner-body" id="prevApptBannerBody"></div>
+        <div class="prev-banner-btns">
+          <button class="prev-btn-apply" id="prevApptApplyBtn" onclick="applyPrevApptSuggestion()">出発駅を適用する</button>
+          <button class="prev-btn-dismiss" onclick="dismissPrevApptBanner()">閉じる</button>
+        </div>
+      </div>
+
       <div class="form-row">
         <div class="form-group">
           <label class="form-label">出発駅</label>
@@ -996,21 +1080,31 @@
 
       <!-- Google Calendar -->
       <div class="setting-section">
-        <div class="setting-section-title">📅 Google Calendar 連携</div>
-        <div class="info-box info-box-ok">
-          ✅ <strong>今すぐ使える機能</strong><br>
-          アポイントを保存するたびに「Googleカレンダーに追加」ボタンが表示されます。タップするとGoogleカレンダーが開き、タイトル・日時・場所・メモが自動入力されます。
+        <div class="setting-section-title">📅 Google Calendar 自動同期</div>
+        <div class="gcal-status">
+          <div class="gcal-dot" id="gcalDot"></div>
+          <span id="gcalStatusText">未接続</span>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Google OAuth Client ID</label>
+          <input class="form-input" id="gcalClientId" placeholder="〇〇.apps.googleusercontent.com"
+            style="font-size:12px;" value="" />
+          <div class="form-hint">Google Cloud ConsoleでOAuth Client IDを発行して貼り付けてください</div>
+        </div>
+        <div style="display:flex;gap:8px;margin-bottom:12px;">
+          <button class="btn btn-primary" style="flex:1" onclick="saveGcalSettings()">接続する</button>
+          <button class="btn btn-secondary" onclick="disconnectGcal()">切断</button>
         </div>
         <div class="info-box info-box-warn">
-          ⚠️ <strong>完全自動同期（APIによる自動反映）について</strong><br>
-          Google Calendar APIの完全自動同期はHTTPS環境が必須のため、現在のローカルファイルでは動作しません。<br><br>
-          <strong>解決方法：GitHub Pages（無料）に公開する</strong><br>
-          1. github.com で無料アカウント作成<br>
-          2. 新規リポジトリを作成<br>
-          3. このHTMLファイルをアップロード<br>
-          4. Settings → Pages → Source: main を設定<br>
-          5. 発行されたHTTPS URLでアクセス開始<br>
-          → 通知・Google Calendar API・Apple Watch すべて動作します
+          <strong>Client ID の取得手順（5分）：</strong><br>
+          1. <a href="https://console.cloud.google.com" target="_blank" style="color:inherit;">console.cloud.google.com</a> を開く<br>
+          2. 新規プロジェクト作成<br>
+          3. 「APIとサービス」→「ライブラリ」→「Google Calendar API」を有効化<br>
+          4. 「認証情報」→「認証情報を作成」→「OAuthクライアントID」<br>
+          5. アプリの種類：<strong>ウェブアプリケーション</strong><br>
+          6. 承認済みJavaScriptオリジン：<br>
+          &nbsp;&nbsp;<code style="font-size:11px;">https://harazou1998-creator.github.io</code><br>
+          7. 作成されたClient IDをコピーして上欄に貼り付け
         </div>
       </div>
 
@@ -1642,6 +1736,7 @@ function openApptModal(id) {
   document.getElementById('apptProduct').value = '';
   document.getElementById('apptDelBtn').style.display = 'none';
   document.getElementById('apptModalTitle').textContent = 'アポイント追加';
+  setDurationUI(60);
 
   if (id) {
     const a = appointments.find(x => x.id === id);
@@ -1659,8 +1754,10 @@ function openApptModal(id) {
       document.getElementById('apptNotes').value = a.notes || '';
       document.getElementById('apptDelBtn').style.display = 'inline-flex';
       document.getElementById('apptModalTitle').textContent = 'アポイント編集';
+      setDurationUI(a.duration || 60);
     }
   }
+  document.getElementById('placesDropdown').style.display = 'none';
   openModal('apptModal');
 }
 
@@ -1684,6 +1781,9 @@ function saveAppt() {
     notes: document.getElementById('apptNotes').value.trim(),
   };
 
+  appt.duration = parseInt(document.getElementById('apptDuration').value) || 60;
+
+  const isNew = !editId;
   if (editId) {
     const idx = appointments.findIndex(x => x.id === editId);
     if (idx >= 0) appointments[idx] = appt;
@@ -1691,7 +1791,13 @@ function saveAppt() {
     appointments.push(appt);
   }
   save(); closeModal('apptModal'); renderPage(currentPage); updateBadges();
-  if (!editId) showGcalToast(appt); // 新規追加時のみ表示
+
+  // Google Calendar 自動同期
+  if (gcalClientId && gcalAccessToken) {
+    autoSyncToGcal(appt);
+  } else if (isNew) {
+    showGcalToast(appt); // 未接続時はURLボタン表示
+  }
 }
 
 function deleteAppt() {
@@ -1702,8 +1808,286 @@ function deleteAppt() {
 }
 
 // =====================
-//  GOOGLE CALENDAR
+//  PREVIOUS APPOINTMENT SUGGESTION
 // =====================
+let prevApptSuggestion = null; // { location, title, time }
+
+function checkPrevApptSuggestion() {
+  const date = document.getElementById('apptDate').value;
+  const time = document.getElementById('apptTime').value;
+  const editId = document.getElementById('apptId').value;
+  const banner = document.getElementById('prevApptBanner');
+
+  if (!date || !time) { banner.classList.remove('show'); return; }
+
+  // 同じ日で、新しいアポより前に終わる直近のアポを探す
+  const sameDay = appointments
+    .filter(a => a.date === date && a.status === 'plan' && a.id !== editId && a.time)
+    .filter(a => {
+      // 前のアポの終了時刻（開始+所要時間）が新アポ開始より前
+      const endMin = timeToMin(a.time) + (a.duration || 60);
+      return endMin <= timeToMin(time);
+    })
+    .sort((a, b) => timeToMin(b.time) - timeToMin(a.time)); // 直近順
+
+  if (!sameDay.length || !sameDay[0].location) {
+    banner.classList.remove('show');
+    return;
+  }
+
+  const prev = sameDay[0];
+  const endTime = minToTime(timeToMin(prev.time) + (prev.duration || 60));
+  prevApptSuggestion = { location: prev.location, title: prev.title, time: prev.time, endTime };
+
+  // 移動時間のGoogle Maps リンク
+  const mapsUrl = prev.location
+    ? `https://www.google.com/maps/dir/${encodeURIComponent(prev.location)}/${encodeURIComponent(document.getElementById('apptLocation').value || '')}/`
+    : null;
+
+  document.getElementById('prevApptBannerBody').innerHTML = `
+    <strong>${prev.time}〜${endTime}</strong> ${escH(prev.title)}<br>
+    📍 ${escH(prev.location)}<br>
+    <span style="color:#0369A1;">↓ この場所を出発駅として設定しますか？</span>
+    ${mapsUrl && document.getElementById('apptLocation').value
+      ? `<br><a href="${mapsUrl}" target="_blank" style="color:#0369A1;font-size:11px;">🗺 Google Mapsで移動時間を確認</a>`
+      : ''}
+  `;
+  banner.classList.add('show');
+}
+
+function applyPrevApptSuggestion() {
+  if (!prevApptSuggestion) return;
+  document.getElementById('apptFrom').value = prevApptSuggestion.location;
+  document.getElementById('prevApptBanner').classList.remove('show');
+}
+
+function dismissPrevApptBanner() {
+  document.getElementById('prevApptBanner').classList.remove('show');
+  prevApptSuggestion = null;
+}
+
+function timeToMin(t) {
+  if (!t) return 0;
+  const [h, m] = t.split(':').map(Number);
+  return h * 60 + m;
+}
+
+function minToTime(min) {
+  const h = Math.floor(min / 60) % 24;
+  const m = min % 60;
+  return `${pad2(h)}:${pad2(m)}`;
+}
+
+// =====================
+//  DURATION PICKER
+// =====================
+function selectDuration(btn) {
+  document.querySelectorAll('.dur-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('apptDuration').value = btn.getAttribute('data-min');
+}
+
+function setDurationUI(min) {
+  document.querySelectorAll('.dur-btn').forEach(b => {
+    b.classList.toggle('active', b.getAttribute('data-min') === String(min));
+  });
+  document.getElementById('apptDuration').value = min || 30;
+}
+
+// =====================
+//  LOCATION AUTOCOMPLETE (OpenStreetMap Nominatim - 無料・API KEY不要)
+// =====================
+let placesTimer = null;
+
+function onLocationInput(val) {
+  clearTimeout(placesTimer);
+  const dropdown = document.getElementById('placesDropdown');
+  if (!val || val.length < 2) { dropdown.style.display = 'none'; return; }
+  dropdown.innerHTML = '<div class="places-loading">検索中...</div>';
+  dropdown.style.display = 'block';
+  placesTimer = setTimeout(() => searchPlaces(val), 400);
+}
+
+async function searchPlaces(query) {
+  const dropdown = document.getElementById('placesDropdown');
+  try {
+    const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&addressdetails=1&countrycodes=jp&limit=6&accept-language=ja`;
+    const res = await fetch(url, { headers: { 'Accept-Language': 'ja' } });
+    const data = await res.json();
+    if (!data.length) {
+      dropdown.innerHTML = '<div class="places-loading">候補が見つかりません</div>';
+      return;
+    }
+    dropdown.innerHTML = data.map(p => {
+      const name = p.namedetails?.name || p.display_name.split(',')[0];
+      const addr = p.display_name;
+      return `<div class="places-item" onclick="selectPlace(${JSON.stringify(escH(name))}, ${JSON.stringify(escH(addr))})">
+        <div class="places-main">${escH(name)}</div>
+        <div class="places-sub">${escH(addr.slice(0, 60))}${addr.length > 60 ? '…' : ''}</div>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    dropdown.innerHTML = '<div class="places-loading">検索エラー</div>';
+  }
+}
+
+function selectPlace(name, addr) {
+  document.getElementById('apptLocation').value = name;
+  document.getElementById('placesDropdown').style.display = 'none';
+}
+
+// クリック外で閉じる
+document.addEventListener('click', e => {
+  if (!e.target.closest('.places-wrap')) {
+    const d = document.getElementById('placesDropdown');
+    if (d) d.style.display = 'none';
+  }
+});
+
+// =====================
+//  GOOGLE CALENDAR AUTO-SYNC
+// =====================
+let gcalTokenClient = null;
+let gcalAccessToken = localStorage.getItem('sh2_gcal_token') || null;
+let gcalClientId = localStorage.getItem('sh2_gcal_client_id') || '';
+let gapiReady = false;
+let pendingSyncAppt = null;
+
+function initGcalAPIs() {
+  if (!gcalClientId) return;
+  // Load GAPI
+  if (!document.getElementById('gapiScript')) {
+    const s = document.createElement('script');
+    s.id = 'gapiScript';
+    s.src = 'https://apis.google.com/js/api.js';
+    s.onload = () => gapi.load('client', async () => {
+      await gapi.client.init({ discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest'] });
+      gapiReady = true;
+      if (gcalAccessToken) {
+        gapi.client.setToken({ access_token: gcalAccessToken });
+        updateGcalStatusUI(true);
+      }
+    });
+    document.head.appendChild(s);
+  }
+  // Load GIS
+  if (!document.getElementById('gsiScript')) {
+    const s = document.createElement('script');
+    s.id = 'gsiScript';
+    s.src = 'https://accounts.google.com/gsi/client';
+    s.onload = () => {
+      gcalTokenClient = google.accounts.oauth2.initTokenClient({
+        client_id: gcalClientId,
+        scope: 'https://www.googleapis.com/auth/calendar.events',
+        callback: async (resp) => {
+          if (resp.error) { alert('認証エラー: ' + resp.error); return; }
+          gcalAccessToken = resp.access_token;
+          localStorage.setItem('sh2_gcal_token', gcalAccessToken);
+          gapi.client.setToken({ access_token: gcalAccessToken });
+          updateGcalStatusUI(true);
+          // 認証後に保留中のアポを同期
+          if (pendingSyncAppt) { await pushToGcal(pendingSyncAppt); pendingSyncAppt = null; }
+        }
+      });
+    };
+    document.head.appendChild(s);
+  }
+}
+
+function saveGcalSettings() {
+  const id = document.getElementById('gcalClientId').value.trim();
+  if (!id) { alert('Client IDを入力してください'); return; }
+  gcalClientId = id;
+  localStorage.setItem('sh2_gcal_client_id', id);
+  gcalAccessToken = null;
+  localStorage.removeItem('sh2_gcal_token');
+  initGcalAPIs();
+  setTimeout(() => connectGcal(), 1200);
+}
+
+function connectGcal() {
+  if (!gcalTokenClient) { alert('少し待ってから再度タップしてください'); return; }
+  gcalTokenClient.requestAccessToken();
+}
+
+function disconnectGcal() {
+  gcalAccessToken = null;
+  localStorage.removeItem('sh2_gcal_token');
+  if (gcalAccessToken && google?.accounts?.oauth2) google.accounts.oauth2.revoke(gcalAccessToken);
+  updateGcalStatusUI(false);
+}
+
+function updateGcalStatusUI(connected) {
+  const dot = document.getElementById('gcalDot');
+  const txt = document.getElementById('gcalStatusText');
+  if (!dot) return;
+  if (connected) {
+    dot.className = 'gcal-dot connected';
+    txt.textContent = '接続済み ✅ 保存時に自動同期します';
+  } else {
+    dot.className = 'gcal-dot disconnected';
+    txt.textContent = '未接続';
+  }
+}
+
+async function autoSyncToGcal(appt) {
+  if (!gcalClientId) return; // 設定なし
+  if (!gcalAccessToken || !gapiReady) {
+    // 未認証 → 認証してから同期
+    pendingSyncAppt = appt;
+    if (gcalTokenClient) gcalTokenClient.requestAccessToken({ prompt: '' });
+    return;
+  }
+  await pushToGcal(appt);
+}
+
+async function pushToGcal(appt) {
+  if (!appt.date) return;
+  const duration = appt.duration || 60;
+  const start = new Date(`${appt.date}T${appt.time || '09:00'}:00`);
+  const end = new Date(start.getTime() + duration * 60000);
+  const fmt = d => d.toISOString().replace('.000Z','').replace('Z','');
+
+  const event = {
+    summary: appt.title,
+    location: appt.location || '',
+    description: [
+      appt.client      ? `顧客: ${appt.client}` : '',
+      appt.travelMin   ? `移動時間: ${appt.travelMin}分` : '',
+      appt.fromStation ? `出発駅: ${appt.fromStation}` : '',
+      appt.notes       ? `メモ: ${appt.notes}` : '',
+    ].filter(Boolean).join('\n'),
+    start: { dateTime: fmt(start), timeZone: 'Asia/Tokyo' },
+    end:   { dateTime: fmt(end),   timeZone: 'Asia/Tokyo' },
+  };
+  try {
+    await gapi.client.calendar.events.insert({ calendarId: 'primary', resource: event });
+    showToast('📅 Googleカレンダーに追加しました');
+  } catch(e) {
+    if (e.status === 401) {
+      gcalAccessToken = null;
+      localStorage.removeItem('sh2_gcal_token');
+      pendingSyncAppt = appt;
+      if (gcalTokenClient) gcalTokenClient.requestAccessToken({ prompt: '' });
+    } else {
+      console.error('GCal sync error', e);
+    }
+  }
+}
+
+function showToast(msg) {
+  const old = document.getElementById('simpleToast');
+  if (old) old.remove();
+  const t = document.createElement('div');
+  t.id = 'simpleToast';
+  t.style.cssText = 'position:fixed;bottom:calc(var(--nav-h) + env(safe-area-inset-bottom) + 16px);left:16px;right:16px;background:#1E293B;color:white;border-radius:12px;padding:12px 16px;font-size:14px;font-weight:600;z-index:400;text-align:center;box-shadow:0 4px 20px rgba(0,0,0,0.3);animation:toastIn 0.3s ease-out;';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => { const el = document.getElementById('simpleToast'); if (el) el.remove(); }, 3000);
+}
+
+// =====================
+//  GOOGLE CALENDAR (URL fallback)
 function gcalEventUrl(appt) {
   if (!appt.date) return null;
   const d = appt.date.replace(/-/g, '');
@@ -2128,6 +2512,12 @@ function init() {
   }
 
   updateNotifStatusBox();
+  // Google Calendar 設定を復元
+  if (gcalClientId) {
+    document.getElementById('gcalClientId').value = gcalClientId;
+    initGcalAPIs();
+    updateGcalStatusUI(!!gcalAccessToken);
+  }
   renderHome();
   updateBadges();
 }
@@ -2136,3 +2526,4 @@ init();
 </script>
 </body>
 </html>
+
