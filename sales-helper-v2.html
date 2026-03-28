@@ -1,0 +1,2138 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="SalesHelper">
+  <meta name="theme-color" content="#0F172A">
+  <title>SalesHelper Pro</title>
+  <style>
+    :root {
+      --bg: #F1F5F9;
+      --surface: #FFFFFF;
+      --header: #0F172A;
+      --primary: #3B82F6;
+      --primary-d: #2563EB;
+      --primary-l: #EFF6FF;
+      --success: #10B981;
+      --success-l: #ECFDF5;
+      --warning: #F59E0B;
+      --warning-l: #FFFBEB;
+      --danger: #EF4444;
+      --danger-l: #FEF2F2;
+      --ikyu: #E11D48;
+      --ikyu-l: #FFF1F2;
+      --res: #7C3AED;
+      --res-l: #F5F3FF;
+      --t1: #0F172A;
+      --t2: #475569;
+      --t3: #94A3B8;
+      --border: #E2E8F0;
+      --radius: 14px;
+      --radius-sm: 8px;
+      --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+      --shadow-md: 0 4px 12px rgba(0,0,0,0.1);
+      --nav-h: 68px;
+      --header-h: 56px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    html, body { height: 100%; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', sans-serif;
+      background: var(--bg);
+      color: var(--t1);
+      overflow: hidden;
+      height: 100dvh;
+    }
+
+    /* ===== LAYOUT ===== */
+    .app-header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: var(--header-h);
+      background: var(--header);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      padding-top: env(safe-area-inset-top);
+      z-index: 100;
+    }
+    .header-title { font-size: 16px; font-weight: 700; color: white; }
+    .header-right { display: flex; align-items: center; gap: 10px; }
+    .header-clock { font-size: 13px; color: rgba(255,255,255,0.6); font-variant-numeric: tabular-nums; }
+    .notif-btn {
+      background: none; border: none; cursor: pointer;
+      font-size: 20px; padding: 4px; color: rgba(255,255,255,0.8);
+    }
+
+    .main-scroll {
+      position: fixed;
+      top: calc(var(--header-h) + env(safe-area-inset-top));
+      bottom: calc(var(--nav-h) + env(safe-area-inset-bottom));
+      left: 0; right: 0;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .main-scroll::-webkit-scrollbar { display: none; }
+    .page { display: none; padding: 16px; padding-bottom: 8px; min-height: 100%; }
+    .page.active { display: block; }
+
+    /* ===== BOTTOM NAV ===== */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0; right: 0;
+      height: calc(var(--nav-h) + env(safe-area-inset-bottom));
+      padding-bottom: env(safe-area-inset-bottom);
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      display: flex;
+      z-index: 100;
+      box-shadow: 0 -2px 10px rgba(0,0,0,0.06);
+    }
+    .nav-item {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      cursor: pointer;
+      border: none;
+      background: none;
+      padding: 8px 0;
+      position: relative;
+      transition: opacity 0.15s;
+    }
+    .nav-item:active { opacity: 0.6; }
+    .nav-icon { font-size: 22px; line-height: 1; }
+    .nav-label { font-size: 10px; color: var(--t3); font-weight: 500; }
+    .nav-item.active .nav-label { color: var(--primary); }
+    .nav-item.active .nav-icon { filter: none; }
+    .nav-badge {
+      position: absolute;
+      top: 6px;
+      right: calc(50% - 16px);
+      background: var(--danger);
+      color: white;
+      font-size: 9px;
+      font-weight: 700;
+      min-width: 16px;
+      height: 16px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 4px;
+    }
+
+    /* ===== CARDS ===== */
+    .card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      margin-bottom: 12px;
+      overflow: hidden;
+    }
+    .card-header {
+      padding: 14px 16px 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .card-title { font-size: 13px; font-weight: 700; color: var(--t2); display: flex; align-items: center; gap: 5px; }
+    .card-body { padding: 0 16px 14px; }
+
+    /* ===== DASHBOARD ===== */
+    .dash-hero {
+      background: linear-gradient(135deg, #1E293B, #334155);
+      border-radius: var(--radius);
+      padding: 18px;
+      margin-bottom: 12px;
+      color: white;
+    }
+    .dash-date { font-size: 12px; opacity: 0.6; margin-bottom: 4px; }
+    .dash-greeting { font-size: 18px; font-weight: 800; margin-bottom: 14px; }
+    .dash-next-label { font-size: 11px; opacity: 0.6; margin-bottom: 6px; }
+    .dash-next-title { font-size: 15px; font-weight: 700; margin-bottom: 8px; line-height: 1.4; }
+    .dash-next-meta { font-size: 12px; opacity: 0.75; }
+    .dash-depart {
+      margin-top: 12px;
+      background: rgba(59,130,246,0.3);
+      border: 1px solid rgba(59,130,246,0.5);
+      border-radius: 8px;
+      padding: 10px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .dash-depart-time { font-size: 22px; font-weight: 800; color: #93C5FD; }
+    .dash-depart-label { font-size: 11px; opacity: 0.7; }
+    .dash-depart-countdown { font-size: 13px; color: #FCD34D; font-weight: 600; }
+    .dash-no-appt { text-align: center; opacity: 0.5; padding: 8px 0; font-size: 13px; }
+
+    /* Stats row */
+    .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
+    .stat-card {
+      background: var(--surface);
+      border-radius: var(--radius-sm);
+      padding: 12px;
+      text-align: center;
+      box-shadow: var(--shadow);
+    }
+    .stat-num { font-size: 24px; font-weight: 800; line-height: 1; }
+    .stat-label { font-size: 10px; color: var(--t3); margin-top: 3px; font-weight: 500; }
+
+    /* Alert banner */
+    .alert {
+      border-radius: var(--radius-sm);
+      padding: 10px 14px;
+      margin-bottom: 10px;
+      font-size: 13px;
+      font-weight: 500;
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+    }
+    .alert-danger { background: var(--danger-l); color: var(--danger); border: 1px solid #FECACA; }
+    .alert-warning { background: var(--warning-l); color: #92400E; border: 1px solid #FDE68A; }
+    .alert-info { background: var(--primary-l); color: var(--primary-d); border: 1px solid #BFDBFE; }
+
+    /* Today's schedule list */
+    .schedule-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .schedule-item:last-child { border-bottom: none; }
+    .sched-time { font-size: 12px; font-weight: 700; color: var(--t2); min-width: 40px; padding-top: 1px; font-variant-numeric: tabular-nums; }
+    .sched-dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 5px; flex-shrink: 0; }
+    .sched-body { flex: 1; min-width: 0; }
+    .sched-title { font-size: 14px; font-weight: 600; color: var(--t1); }
+    .sched-sub { font-size: 11px; color: var(--t3); margin-top: 2px; }
+
+    /* ===== LIST ITEMS ===== */
+    .list-item {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      cursor: pointer;
+      transition: background 0.1s;
+    }
+    .list-item:last-child { border-bottom: none; }
+    .list-item:active { background: var(--bg); }
+    .list-item-body { flex: 1; min-width: 0; }
+    .list-item-title { font-size: 14px; font-weight: 600; color: var(--t1); line-height: 1.3; }
+    .list-item-sub { font-size: 12px; color: var(--t3); margin-top: 3px; line-height: 1.5; }
+    .list-item-right { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0; }
+    .list-item-time { font-size: 12px; color: var(--t3); font-variant-numeric: tabular-nums; }
+
+    /* ===== CHIPS / BADGES ===== */
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 8px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .chip-blue { background: var(--primary-l); color: var(--primary-d); }
+    .chip-green { background: var(--success-l); color: var(--success); }
+    .chip-red { background: var(--danger-l); color: var(--danger); }
+    .chip-yellow { background: var(--warning-l); color: #92400E; }
+    .chip-gray { background: #F1F5F9; color: var(--t2); }
+    .chip-ikyu { background: var(--ikyu-l); color: var(--ikyu); }
+    .chip-res { background: var(--res-l); color: var(--res); }
+
+    /* ===== CALL RESULT CHIPS ===== */
+    .result-appt { background: var(--success-l); color: var(--success); }
+    .result-absent { background: #F1F5F9; color: var(--t2); }
+    .result-callback { background: var(--warning-l); color: #92400E; }
+    .result-ng { background: var(--danger-l); color: var(--danger); }
+    .result-thinking { background: var(--primary-l); color: var(--primary-d); }
+
+    /* ===== BUTTONS ===== */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      padding: 10px 16px;
+      border-radius: var(--radius-sm);
+      border: none;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      transition: all 0.15s;
+      white-space: nowrap;
+      font-family: inherit;
+    }
+    .btn:active { transform: scale(0.97); }
+    .btn-primary { background: var(--primary); color: white; }
+    .btn-primary:hover { background: var(--primary-d); }
+    .btn-full { width: 100%; }
+    .btn-secondary { background: var(--bg); color: var(--t1); border: 1px solid var(--border); }
+    .btn-danger { background: var(--danger-l); color: var(--danger); }
+    .btn-sm { padding: 6px 12px; font-size: 12px; border-radius: 6px; }
+    .btn-maps { background: #34A853; color: white; }
+    .btn-row { display: flex; gap: 8px; margin-top: 12px; }
+
+    /* FAB */
+    .fab {
+      position: fixed;
+      bottom: calc(var(--nav-h) + env(safe-area-inset-bottom) + 16px);
+      right: 16px;
+      width: 52px;
+      height: 52px;
+      border-radius: 26px;
+      background: var(--primary);
+      color: white;
+      font-size: 24px;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 4px 16px rgba(59,130,246,0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 50;
+      transition: all 0.2s;
+    }
+    .fab:active { transform: scale(0.92); }
+    .fab.hidden { display: none; }
+
+    /* ===== SECTION HEADER ===== */
+    .section-hd {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    .section-title { font-size: 15px; font-weight: 700; color: var(--t1); }
+
+    /* ===== FORMS ===== */
+    .form-group { margin-bottom: 14px; }
+    .form-label { display: block; font-size: 12px; font-weight: 600; color: var(--t2); margin-bottom: 5px; }
+    .form-input, .form-select, .form-textarea {
+      width: 100%;
+      padding: 11px 13px;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 15px;
+      color: var(--t1);
+      background: var(--surface);
+      font-family: inherit;
+      transition: border-color 0.15s;
+      -webkit-appearance: none;
+    }
+    .form-input:focus, .form-select:focus, .form-textarea:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+    .form-textarea { min-height: 80px; resize: vertical; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .form-hint { font-size: 11px; color: var(--t3); margin-top: 3px; }
+
+    /* Result selector */
+    .result-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; }
+    .result-opt {
+      padding: 8px 4px;
+      border-radius: 6px;
+      border: 1.5px solid var(--border);
+      background: white;
+      font-size: 11px;
+      font-weight: 600;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.15s;
+      color: var(--t2);
+      font-family: inherit;
+    }
+    .result-opt.selected-appt { background: var(--success-l); border-color: var(--success); color: var(--success); }
+    .result-opt.selected-absent { background: #F1F5F9; border-color: var(--t3); color: var(--t2); }
+    .result-opt.selected-callback { background: var(--warning-l); border-color: var(--warning); color: #92400E; }
+    .result-opt.selected-ng { background: var(--danger-l); border-color: var(--danger); color: var(--danger); }
+    .result-opt.selected-thinking { background: var(--primary-l); border-color: var(--primary); color: var(--primary-d); }
+
+    /* ===== MODAL ===== */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 200;
+      align-items: flex-end;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: var(--surface);
+      border-radius: 20px 20px 0 0;
+      width: 100%;
+      max-height: 92dvh;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding-bottom: env(safe-area-inset-bottom);
+      animation: slideUp 0.25s ease-out;
+    }
+    @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+    .modal-handle {
+      width: 36px;
+      height: 4px;
+      background: var(--border);
+      border-radius: 2px;
+      margin: 10px auto 0;
+    }
+    .modal-header {
+      padding: 14px 16px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+    }
+    .modal-title { font-size: 16px; font-weight: 700; }
+    .modal-close { background: none; border: none; font-size: 20px; color: var(--t3); padding: 4px; cursor: pointer; }
+    .modal-body { padding: 16px; }
+    .modal-footer {
+      padding: 12px 16px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      gap: 8px;
+    }
+
+    /* ===== CHECKLIST ===== */
+    .checklist-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 11px 16px;
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      transition: background 0.1s;
+    }
+    .checklist-item:last-child { border-bottom: none; }
+    .checklist-item:active { background: var(--bg); }
+    .check-box {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      border: 2px solid var(--border);
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+      font-size: 12px;
+    }
+    .check-box.done { background: var(--success); border-color: var(--success); color: white; }
+    .checklist-label { font-size: 14px; color: var(--t1); }
+    .checklist-label.done { text-decoration: line-through; color: var(--t3); }
+
+    /* Progress bar */
+    .progress-bar-bg {
+      height: 6px;
+      background: var(--border);
+      border-radius: 3px;
+      overflow: hidden;
+      margin: 8px 0;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      border-radius: 3px;
+      transition: width 0.3s ease;
+    }
+
+    /* Contract card */
+    .contract-card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      margin-bottom: 10px;
+      overflow: hidden;
+    }
+    .contract-header {
+      padding: 14px 16px 10px;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+    }
+    .contract-name { font-size: 15px; font-weight: 700; }
+    .contract-sub { font-size: 12px; color: var(--t3); margin-top: 2px; }
+
+    /* Call log item */
+    .call-time-header {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--t3);
+      padding: 6px 16px;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+    }
+
+    /* empty state */
+    .empty {
+      padding: 48px 20px;
+      text-align: center;
+      color: var(--t3);
+    }
+    .empty-icon { font-size: 40px; margin-bottom: 10px; }
+    .empty-text { font-size: 14px; line-height: 1.6; }
+
+    /* Task priority dot */
+    .p-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      margin-top: 5px;
+    }
+    .p-high { background: var(--danger); }
+    .p-mid { background: var(--warning); }
+    .p-low { background: var(--success); }
+
+    /* Filter tabs */
+    .filter-tabs {
+      display: flex;
+      overflow-x: auto;
+      gap: 6px;
+      padding: 0 0 10px;
+      scrollbar-width: none;
+    }
+    .filter-tabs::-webkit-scrollbar { display: none; }
+    .filter-tab {
+      padding: 5px 14px;
+      border-radius: 20px;
+      border: 1.5px solid var(--border);
+      background: var(--surface);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      color: var(--t2);
+      font-family: inherit;
+      transition: all 0.15s;
+    }
+    .filter-tab.active { background: var(--primary); border-color: var(--primary); color: white; }
+
+    /* Maps button inline */
+    .maps-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 10px;
+      border-radius: 6px;
+      background: #DCFCE7;
+      color: #15803D;
+      font-size: 12px;
+      font-weight: 600;
+      text-decoration: none;
+      margin-top: 4px;
+    }
+
+    /* PWA hint */
+    .pwa-hint {
+      background: linear-gradient(135deg, #1E293B, #0F172A);
+      color: white;
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      margin-bottom: 12px;
+      font-size: 13px;
+      line-height: 1.6;
+      display: none;
+    }
+    .pwa-hint.show { display: block; }
+    .pwa-close { float: right; background: none; border: none; color: rgba(255,255,255,0.5); font-size: 18px; cursor: pointer; }
+
+    /* Notification banner */
+    .notif-perm-banner {
+      background: var(--primary-l);
+      border: 1px solid #BFDBFE;
+      border-radius: var(--radius-sm);
+      padding: 10px 14px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      font-size: 12px;
+      color: var(--primary-d);
+    }
+
+    /* Google Calendar Toast */
+    .gcal-toast {
+      position: fixed;
+      bottom: calc(var(--nav-h) + env(safe-area-inset-bottom) + 80px);
+      left: 16px; right: 16px;
+      background: #1E293B;
+      color: white;
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      z-index: 300;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.35);
+      animation: toastIn 0.3s ease-out;
+    }
+    @keyframes toastIn {
+      from { transform: translateY(16px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    .gcal-btn {
+      padding: 7px 13px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-family: inherit;
+    }
+    .gcal-btn-primary { background: #4285F4; color: white; }
+    .gcal-btn-secondary { background: rgba(255,255,255,0.15); color: white; }
+
+    /* Settings sections */
+    .setting-section { margin-bottom: 20px; }
+    .setting-section-title {
+      font-size: 13px; font-weight: 700; color: var(--t2);
+      margin-bottom: 10px; display: flex; align-items: center; gap: 6px;
+    }
+    .info-box {
+      border-radius: 8px;
+      padding: 12px;
+      font-size: 12px;
+      line-height: 1.75;
+      margin-bottom: 8px;
+    }
+    .info-box-warn { background: #FEF9C3; border: 1px solid #FDE047; color: #713F12; }
+    .info-box-ok   { background: var(--success-l); border: 1px solid #6EE7B7; color: #065F46; }
+    .info-box-err  { background: var(--danger-l); border: 1px solid #FCA5A5; color: #7F1D1D; }
+    .info-box-info { background: var(--primary-l); border: 1px solid #BFDBFE; color: #1E3A8A; }
+  </style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="app-header">
+  <div class="header-title">📊 SalesHelper Pro</div>
+  <div class="header-right">
+    <div class="header-clock" id="clock">--:--</div>
+    <button class="notif-btn" onclick="openModal('settingsModal')" title="設定">⚙️</button>
+  </div>
+</div>
+
+<!-- Main content -->
+<div class="main-scroll" id="mainScroll">
+
+  <!-- HOME -->
+  <div class="page active" id="page-home">
+    <div id="pwaHint" class="pwa-hint">
+      <button class="pwa-close" onclick="document.getElementById('pwaHint').style.display='none'">✕</button>
+      ⚠️ <strong>iPhoneへの通知は現在届きません</strong><br>
+      このアプリはローカルファイルで動作中のため、iPhoneやApple Watchへの通知は<strong>届きません</strong>。<br>
+      通知を有効にするには <strong>⚙️設定</strong> を確認してください。
+    </div>
+    <div id="notifBanner"></div>
+    <div id="dashAlerts"></div>
+    <div class="dash-hero" id="dashHero"></div>
+    <div class="stats-row" id="dashStats"></div>
+    <div class="card" id="dashTodayCard">
+      <div class="card-header"><span class="card-title">📅 本日のスケジュール</span></div>
+      <div id="dashToday"></div>
+    </div>
+    <div class="card" id="dashAfterCard">
+      <div class="card-header"><span class="card-title">📋 事後作業 未完了</span></div>
+      <div id="dashAfter"></div>
+    </div>
+  </div>
+
+  <!-- SCHEDULE -->
+  <div class="page" id="page-schedule">
+    <div class="section-hd">
+      <div class="section-title">📅 スケジュール</div>
+    </div>
+    <div class="filter-tabs" id="schedFilterTabs">
+      <button class="filter-tab active" onclick="filterSched('all',this)">すべて</button>
+      <button class="filter-tab" onclick="filterSched('today',this)">本日</button>
+      <button class="filter-tab" onclick="filterSched('week',this)">今週</button>
+      <button class="filter-tab" onclick="filterSched('plan',this)">予定のみ</button>
+    </div>
+    <div class="card" id="schedList"></div>
+  </div>
+
+  <!-- CALLS -->
+  <div class="page" id="page-calls">
+    <div class="section-hd">
+      <div class="section-title">📞 架電ログ</div>
+    </div>
+    <!-- Call stats -->
+    <div class="stats-row" id="callStats"></div>
+    <div class="filter-tabs">
+      <button class="filter-tab active" onclick="filterCalls('all',this)">すべて</button>
+      <button class="filter-tab" onclick="filterCalls('today',this)">本日</button>
+      <button class="filter-tab" onclick="filterCalls('appt',this)">アポ獲得</button>
+      <button class="filter-tab" onclick="filterCalls('callback',this)">コールバック</button>
+    </div>
+    <div class="card" id="callList"></div>
+  </div>
+
+  <!-- TASKS -->
+  <div class="page" id="page-tasks">
+    <div class="section-hd">
+      <div class="section-title">✅ タスク</div>
+    </div>
+    <div class="filter-tabs">
+      <button class="filter-tab active" onclick="filterTasks('all',this)">すべて</button>
+      <button class="filter-tab" onclick="filterTasks('pending',this)">未完了</button>
+      <button class="filter-tab" onclick="filterTasks('high',this)">優先度:高</button>
+      <button class="filter-tab" onclick="filterTasks('overdue',this)">期限超過</button>
+    </div>
+    <div class="card" id="taskList"></div>
+  </div>
+
+  <!-- AFTER WORK -->
+  <div class="page" id="page-after">
+    <div class="section-hd">
+      <div class="section-title">📋 事後作業チェック</div>
+    </div>
+    <div class="filter-tabs">
+      <button class="filter-tab active" onclick="filterContracts('all',this)">すべて</button>
+      <button class="filter-tab" onclick="filterContracts('incomplete',this)">未完了あり</button>
+      <button class="filter-tab" onclick="filterContracts('ikyu',this)">一休レストラン</button>
+      <button class="filter-tab" onclick="filterContracts('res',this)">レス在庫</button>
+    </div>
+    <div id="contractList"></div>
+  </div>
+
+</div>
+
+<!-- FAB -->
+<button class="fab" id="mainFab" onclick="openFab()">＋</button>
+
+<!-- Bottom Nav -->
+<div class="bottom-nav">
+  <button class="nav-item active" onclick="showPage('home',this)">
+    <span class="nav-icon">🏠</span>
+    <span class="nav-label">ホーム</span>
+  </button>
+  <button class="nav-item" onclick="showPage('schedule',this)" id="navSchedule">
+    <span class="nav-icon">📅</span>
+    <span class="nav-label">スケジュール</span>
+  </button>
+  <button class="nav-item" onclick="showPage('calls',this)" id="navCalls">
+    <span class="nav-icon">📞</span>
+    <span class="nav-label">架電</span>
+  </button>
+  <button class="nav-item" onclick="showPage('tasks',this)" id="navTasks">
+    <span class="nav-icon">✅</span>
+    <span class="nav-label">タスク</span>
+  </button>
+  <button class="nav-item" onclick="showPage('after',this)" id="navAfter">
+    <span class="nav-icon">📋</span>
+    <span class="nav-label">事後作業</span>
+  </button>
+</div>
+
+<!-- ===== MODALS ===== -->
+
+<!-- Appointment Modal -->
+<div class="modal-overlay" id="apptModal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <div class="modal-title" id="apptModalTitle">アポイント追加</div>
+      <button class="modal-close" onclick="closeModal('apptModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="apptId" />
+      <div class="form-group">
+        <label class="form-label">件名 *</label>
+        <input class="form-input" id="apptTitle" placeholder="例: 〇〇レストラン 提案商談" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">顧客名</label>
+        <input class="form-input" id="apptClient" placeholder="例: 〇〇レストラン 田中様" />
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">日付 *</label>
+          <input class="form-input" type="date" id="apptDate" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">時間</label>
+          <input class="form-input" type="time" id="apptTime" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">訪問先（住所・駅）</label>
+        <input class="form-input" id="apptLocation" placeholder="例: 渋谷区〇〇 or 渋谷駅" />
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">出発駅</label>
+          <input class="form-input" id="apptFrom" placeholder="例: 新宿" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">移動時間（分）</label>
+          <input class="form-input" type="number" id="apptTravel" placeholder="30" />
+          <div class="form-hint">出発時刻の自動計算に使用</div>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">商材</label>
+          <select class="form-select" id="apptProduct">
+            <option value="">未選択</option>
+            <option value="ikyu">一休レストラン</option>
+            <option value="res_ledger">レス在庫台帳</option>
+            <option value="res_sc">サイトコントローラー</option>
+            <option value="res_web">レス在庫ウェブ予約</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">ステータス</label>
+          <select class="form-select" id="apptStatus">
+            <option value="plan">予定</option>
+            <option value="done">完了</option>
+            <option value="cancel">キャンセル</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">メモ</label>
+        <textarea class="form-textarea" id="apptNotes" placeholder="商談内容・持参物など"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('apptModal')" style="flex:1">キャンセル</button>
+      <button class="btn btn-danger btn-sm" id="apptDelBtn" onclick="deleteAppt()" style="display:none">削除</button>
+      <button class="btn btn-primary" onclick="saveAppt()" style="flex:1">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- Call Modal -->
+<div class="modal-overlay" id="callModal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <div class="modal-title" id="callModalTitle">架電記録</div>
+      <button class="modal-close" onclick="closeModal('callModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="callId" />
+      <div class="form-group">
+        <label class="form-label">顧客名・店名 *</label>
+        <input class="form-input" id="callClient" placeholder="例: 〇〇レストラン" />
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">日付</label>
+          <input class="form-input" type="date" id="callDate" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">時間</label>
+          <input class="form-input" type="time" id="callTime" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">結果 *</label>
+        <div class="result-grid">
+          <button class="result-opt" data-v="appt" onclick="selectResult(this)">📅<br>アポ獲得</button>
+          <button class="result-opt" data-v="absent" onclick="selectResult(this)">📵<br>不在</button>
+          <button class="result-opt" data-v="callback" onclick="selectResult(this)">🔄<br>CB</button>
+          <button class="result-opt" data-v="ng" onclick="selectResult(this)">❌<br>NG</button>
+          <button class="result-opt" data-v="thinking" onclick="selectResult(this)">🤔<br>検討中</button>
+        </div>
+      </div>
+      <div class="form-group" id="callbackDateGroup" style="display:none">
+        <label class="form-label">コールバック日時</label>
+        <input class="form-input" type="datetime-local" id="callCallbackDate" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">商材</label>
+        <select class="form-select" id="callProduct">
+          <option value="">未選択</option>
+          <option value="ikyu">一休レストラン</option>
+          <option value="res_ledger">レス在庫台帳</option>
+          <option value="res_sc">サイトコントローラー</option>
+          <option value="res_web">レス在庫ウェブ予約</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">メモ</label>
+        <textarea class="form-textarea" id="callNotes" placeholder="会話内容・担当者名など" style="min-height:60px;"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('callModal')" style="flex:1">キャンセル</button>
+      <button class="btn btn-danger btn-sm" id="callDelBtn" onclick="deleteCall()" style="display:none">削除</button>
+      <button class="btn btn-primary" onclick="saveCall()" style="flex:1">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- Task Modal -->
+<div class="modal-overlay" id="taskModal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <div class="modal-title" id="taskModalTitle">タスク追加</div>
+      <button class="modal-close" onclick="closeModal('taskModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="taskId" />
+      <div class="form-group">
+        <label class="form-label">タスク名 *</label>
+        <input class="form-input" id="taskTitle" placeholder="例: 提案書作成" />
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">期限</label>
+          <input class="form-input" type="date" id="taskDue" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">優先度</label>
+          <select class="form-select" id="taskPriority">
+            <option value="high">高</option>
+            <option value="mid" selected>中</option>
+            <option value="low">低</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">カテゴリ</label>
+          <select class="form-select" id="taskCategory">
+            <option value="商談準備">商談準備</option>
+            <option value="フォロー">フォロー</option>
+            <option value="事務作業">事務作業</option>
+            <option value="社内対応">社内対応</option>
+            <option value="Slack">Slack返信</option>
+            <option value="その他">その他</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">ステータス</label>
+          <select class="form-select" id="taskStatus">
+            <option value="pending">未着手</option>
+            <option value="inprogress">進行中</option>
+            <option value="done">完了</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">メモ</label>
+        <textarea class="form-textarea" id="taskNotes" placeholder="詳細" style="min-height:60px;"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('taskModal')" style="flex:1">キャンセル</button>
+      <button class="btn btn-danger btn-sm" id="taskDelBtn" onclick="deleteTask()" style="display:none">削除</button>
+      <button class="btn btn-primary" onclick="saveTask()" style="flex:1">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- Contract Modal -->
+<div class="modal-overlay" id="contractModal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <div class="modal-title" id="contractModalTitle">事後作業 新規登録</div>
+      <button class="modal-close" onclick="closeModal('contractModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="contractId" />
+      <div class="form-group">
+        <label class="form-label">店舗名・顧客名 *</label>
+        <input class="form-input" id="contractClient" placeholder="例: 〇〇レストラン" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">商材 *</label>
+        <select class="form-select" id="contractProduct" onchange="updateContractTemplate()">
+          <option value="">選択してください</option>
+          <option value="ikyu">一休レストラン</option>
+          <option value="res_ledger">レス在庫台帳</option>
+          <option value="res_sc">サイトコントローラー</option>
+          <option value="res_web">レス在庫ウェブ予約</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">契約日</label>
+        <input class="form-input" type="date" id="contractDate" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">メモ</label>
+        <textarea class="form-textarea" id="contractNotes" placeholder="担当者・備考など" style="min-height:60px;"></textarea>
+      </div>
+      <div id="contractTaskPreview" style="margin-top:4px;"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('contractModal')" style="flex:1">キャンセル</button>
+      <button class="btn btn-danger btn-sm" id="contractDelBtn" onclick="deleteContract()" style="display:none">削除</button>
+      <button class="btn btn-primary" onclick="saveContract()" style="flex:1">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- Settings Modal -->
+<div class="modal-overlay" id="settingsModal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <div class="modal-title">⚙️ 設定・ヘルプ</div>
+      <button class="modal-close" onclick="closeModal('settingsModal')">✕</button>
+    </div>
+    <div class="modal-body">
+
+      <!-- Google Calendar -->
+      <div class="setting-section">
+        <div class="setting-section-title">📅 Google Calendar 連携</div>
+        <div class="info-box info-box-ok">
+          ✅ <strong>今すぐ使える機能</strong><br>
+          アポイントを保存するたびに「Googleカレンダーに追加」ボタンが表示されます。タップするとGoogleカレンダーが開き、タイトル・日時・場所・メモが自動入力されます。
+        </div>
+        <div class="info-box info-box-warn">
+          ⚠️ <strong>完全自動同期（APIによる自動反映）について</strong><br>
+          Google Calendar APIの完全自動同期はHTTPS環境が必須のため、現在のローカルファイルでは動作しません。<br><br>
+          <strong>解決方法：GitHub Pages（無料）に公開する</strong><br>
+          1. github.com で無料アカウント作成<br>
+          2. 新規リポジトリを作成<br>
+          3. このHTMLファイルをアップロード<br>
+          4. Settings → Pages → Source: main を設定<br>
+          5. 発行されたHTTPS URLでアクセス開始<br>
+          → 通知・Google Calendar API・Apple Watch すべて動作します
+        </div>
+      </div>
+
+      <hr style="border:none;border-top:1px solid var(--border);margin:4px 0 20px;">
+
+      <!-- Notifications -->
+      <div class="setting-section">
+        <div class="setting-section-title">🔔 通知 &amp; Apple Watch</div>
+        <div id="notifStatusDetail"></div>
+        <div class="info-box info-box-warn" style="margin-top:10px;">
+          ⚠️ <strong>iPhoneへの通知について（重要）</strong><br>
+          現在ローカルファイル（file://）で動作中のため：<br>
+          ・<strong>iPhone への通知：届きません</strong><br>
+          ・<strong>Apple Watch への通知：届きません</strong><br>
+          ・PCのブラウザ（Chrome/Edge）：タブが開いている間のみ届きます<br><br>
+          <strong>Apple Watch通知を有効にする手順：</strong><br>
+          ① GitHub Pages等でHTTPS公開（上記参照）<br>
+          ② iPhoneのSafariでHTTPS URLを開く<br>
+          ③ 共有ボタン →「ホーム画面に追加」<br>
+          ④ ホーム画面のアイコンから起動<br>
+          ⑤ 通知を許可する<br>
+          → AppleWatchに自動ミラーリングされます
+        </div>
+        <button class="btn btn-secondary btn-full" style="margin-top:10px;" onclick="requestNotifPermission()">🔔 通知の許可をリクエスト（PC用）</button>
+      </div>
+
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-primary btn-full" onclick="closeModal('settingsModal')">閉じる</button>
+    </div>
+  </div>
+</div>
+
+<!-- FAB action menu -->
+<div class="modal-overlay" id="fabMenu">
+  <div class="modal" style="border-radius:20px 20px 0 0;">
+    <div class="modal-handle"></div>
+    <div class="modal-body" style="padding-bottom:8px;">
+      <div style="font-size:13px;font-weight:700;color:var(--t2);margin-bottom:12px;">追加する項目を選択</div>
+      <button class="btn btn-secondary btn-full" style="margin-bottom:8px;justify-content:flex-start;font-size:15px;" onclick="closeModal('fabMenu');openApptModal()">📅 アポイント追加</button>
+      <button class="btn btn-secondary btn-full" style="margin-bottom:8px;justify-content:flex-start;font-size:15px;" onclick="closeModal('fabMenu');openCallModal()">📞 架電記録</button>
+      <button class="btn btn-secondary btn-full" style="margin-bottom:8px;justify-content:flex-start;font-size:15px;" onclick="closeModal('fabMenu');openTaskModal()">✅ タスク追加</button>
+      <button class="btn btn-secondary btn-full" style="margin-bottom:16px;justify-content:flex-start;font-size:15px;" onclick="closeModal('fabMenu');openContractModal()">📋 事後作業登録</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// =====================
+//  CONFIG
+// =====================
+const PRODUCTS = {
+  ikyu:      { name: '一休レストラン', color: 'var(--ikyu)', chipClass: 'chip-ikyu', type: 'ikyu' },
+  res_ledger:{ name: 'レス在庫台帳',  color: 'var(--res)',  chipClass: 'chip-res',  type: 'res' },
+  res_sc:    { name: 'サイトコントローラー', color: 'var(--res)', chipClass: 'chip-res', type: 'res' },
+  res_web:   { name: 'レス在庫ウェブ予約', color: 'var(--res)', chipClass: 'chip-res', type: 'res' },
+};
+
+const TASK_TEMPLATES = {
+  ikyu: [
+    '同意取得',
+    '振込先口座の登録',
+    '口座振替用紙の回収',
+    'サイト写真の回収',
+    'プランの確認',
+    '席の確認',
+  ],
+  res: [
+    'レス在庫の申し込み',
+    '日程調整',
+    '席シートIDの回収',
+  ]
+};
+
+const CALL_RESULTS = {
+  appt:     { label: 'アポ獲得',  chipClass: 'result-appt' },
+  absent:   { label: '不在',      chipClass: 'result-absent' },
+  callback: { label: 'コールバック', chipClass: 'result-callback' },
+  ng:       { label: 'NG',        chipClass: 'result-ng' },
+  thinking: { label: '検討中',    chipClass: 'result-thinking' },
+};
+
+const DAYS = ['日','月','火','水','木','金','土'];
+
+// =====================
+//  DATA
+// =====================
+let appointments = JSON.parse(localStorage.getItem('sh2_appts') || '[]');
+let calls = JSON.parse(localStorage.getItem('sh2_calls') || '[]');
+let tasks = JSON.parse(localStorage.getItem('sh2_tasks') || '[]');
+let contracts = JSON.parse(localStorage.getItem('sh2_contracts') || '[]');
+let notifiedSet = new Set(JSON.parse(localStorage.getItem('sh2_notified') || '[]'));
+
+function save() {
+  localStorage.setItem('sh2_appts', JSON.stringify(appointments));
+  localStorage.setItem('sh2_calls', JSON.stringify(calls));
+  localStorage.setItem('sh2_tasks', JSON.stringify(tasks));
+  localStorage.setItem('sh2_contracts', JSON.stringify(contracts));
+  localStorage.setItem('sh2_notified', JSON.stringify([...notifiedSet]));
+}
+
+function genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 5); }
+
+// =====================
+//  UTILS
+// =====================
+function pad2(n) { return String(n).padStart(2, '0'); }
+function todayStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
+}
+function nowTime() {
+  const d = new Date();
+  return `${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+}
+function fmtDate(s) {
+  if (!s) return '';
+  const d = new Date(s + 'T00:00:00');
+  return `${d.getMonth()+1}/${d.getDate()}(${DAYS[d.getDay()]})`;
+}
+function isToday(s) { return s === todayStr(); }
+function isOverdue(s) { return s && s < todayStr(); }
+function daysUntil(s) {
+  return Math.floor((new Date(s+'T00:00:00') - new Date(todayStr()+'T00:00:00')) / 86400000);
+}
+function calcDepart(date, time, travelMin) {
+  if (!date || !time || !travelMin) return null;
+  const dt = new Date(`${date}T${time}:00`);
+  dt.setMinutes(dt.getMinutes() - parseInt(travelMin));
+  return `${pad2(dt.getHours())}:${pad2(dt.getMinutes())}`;
+}
+function minutesUntil(date, time) {
+  if (!date || !time) return null;
+  return Math.floor((new Date(`${date}T${time}:00`) - new Date()) / 60000);
+}
+function escH(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function googleMapsUrl(appt) {
+  const dest = encodeURIComponent(appt.location || '');
+  const origin = encodeURIComponent(appt.fromStation || '');
+  return `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${dest}&travelmode=transit`;
+}
+function thisWeekEnd() {
+  const d = new Date(); d.setDate(d.getDate() + (6 - d.getDay()));
+  return d.toISOString().slice(0,10);
+}
+
+// =====================
+//  CLOCK
+// =====================
+function updateClock() {
+  const d = new Date();
+  document.getElementById('clock').textContent = `${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+}
+setInterval(updateClock, 10000);
+updateClock();
+
+// =====================
+//  NAVIGATION
+// =====================
+let currentPage = 'home';
+let schedFilter = 'all', callFilter = 'all', taskFilter = 'all', contractFilter = 'all';
+
+function showPage(page, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  if (btn) btn.classList.add('active');
+  currentPage = page;
+  renderPage(page);
+  document.getElementById('mainScroll').scrollTop = 0;
+}
+
+function renderPage(p) {
+  if (p === 'home') renderHome();
+  else if (p === 'schedule') renderSchedule();
+  else if (p === 'calls') renderCalls();
+  else if (p === 'tasks') renderTasks();
+  else if (p === 'after') renderContracts();
+}
+
+// =====================
+//  HOME DASHBOARD
+// =====================
+function renderHome() {
+  renderHero();
+  renderDashStats();
+  renderDashAlerts();
+  renderDashToday();
+  renderDashAfter();
+  updateBadges();
+}
+
+function renderHero() {
+  const hero = document.getElementById('dashHero');
+  const d = new Date();
+  const dateStr = `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日(${DAYS[d.getDay()]})`;
+
+  const now = new Date();
+  const upcoming = appointments
+    .filter(a => a.status === 'plan' && a.date && a.time)
+    .filter(a => new Date(`${a.date}T${a.time}:00`) > now)
+    .sort((a,b) => `${a.date}T${a.time}` < `${b.date}T${b.time}` ? -1 : 1);
+
+  const next = upcoming[0];
+
+  if (!next) {
+    hero.innerHTML = `
+      <div class="dash-date">${dateStr}</div>
+      <div class="dash-greeting">本日もお疲れ様です 👋</div>
+      <div class="dash-no-appt">予定中のアポイントはありません</div>
+    `;
+    return;
+  }
+
+  const departTime = next.travelMin ? calcDepart(next.date, next.time, next.travelMin) : null;
+  const minUntilDepart = departTime ? minutesUntil(next.date, departTime) : null;
+  const minUntilAppt = minutesUntil(next.date, next.time);
+  const prod = next.product ? PRODUCTS[next.product] : null;
+
+  let departHtml = '';
+  if (departTime) {
+    const urgent = minUntilDepart !== null && minUntilDepart >= 0 && minUntilDepart <= 30;
+    const countdown = minUntilDepart !== null && minUntilDepart >= 0
+      ? `あと${minUntilDepart}分`
+      : minUntilDepart < 0 ? '出発済み' : '';
+    departHtml = `
+      <div class="dash-depart">
+        <div>
+          <div class="dash-depart-label">🚃 出発時刻</div>
+          <div class="dash-depart-time">${departTime}</div>
+        </div>
+        <div style="text-align:right;">
+          ${countdown ? `<div class="dash-depart-countdown">${urgent ? '⚠️ ' : ''}${countdown}</div>` : ''}
+          <div style="font-size:11px;opacity:0.6;margin-top:3px;">移動${next.travelMin}分</div>
+        </div>
+      </div>
+    `;
+  }
+
+  hero.innerHTML = `
+    <div class="dash-date">${dateStr}</div>
+    <div class="dash-greeting">次のアポイント</div>
+    <div class="dash-next-title">${escH(next.title)}</div>
+    <div class="dash-next-meta">
+      📅 ${fmtDate(next.date)} ${next.time}
+      ${next.location ? ` &nbsp;📍 ${escH(next.location)}` : ''}
+      ${prod ? ` &nbsp;<span style="background:rgba(255,255,255,0.15);padding:1px 7px;border-radius:12px;font-size:11px;">${escH(prod.name)}</span>` : ''}
+    </div>
+    ${next.location ? `<a href="${googleMapsUrl(next)}" target="_blank" style="display:inline-flex;align-items:center;gap:4px;margin-top:8px;background:rgba(52,168,83,0.25);color:#86EFAC;padding:4px 10px;border-radius:6px;font-size:12px;font-weight:600;text-decoration:none;">🗺 Google Maps で経路確認</a>` : ''}
+    ${departHtml}
+  `;
+}
+
+function renderDashStats() {
+  const today = todayStr();
+  const todayAppts = appointments.filter(a => isToday(a.date) && a.status === 'plan').length;
+  const todayCalls = calls.filter(c => c.date === today).length;
+  const pendingTasks = tasks.filter(t => t.status !== 'done').length;
+
+  document.getElementById('dashStats').innerHTML = `
+    <div class="stat-card">
+      <div class="stat-num" style="color:var(--primary)">${todayAppts}</div>
+      <div class="stat-label">本日のアポ</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num" style="color:var(--success)">${todayCalls}</div>
+      <div class="stat-label">本日の架電</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num" style="color:var(--warning)">${pendingTasks}</div>
+      <div class="stat-label">未完了タスク</div>
+    </div>
+  `;
+}
+
+function renderDashAlerts() {
+  const alerts = [];
+  const today = todayStr();
+
+  // Departure warnings
+  appointments.filter(a => a.status === 'plan' && isToday(a.date) && a.travelMin).forEach(a => {
+    const dep = calcDepart(a.date, a.time, a.travelMin);
+    const min = minutesUntil(a.date, dep);
+    if (min !== null && min >= 0 && min <= 30) {
+      alerts.push(`<div class="alert alert-danger">🚨 <strong>${escH(a.title)}</strong> の出発時刻まであと <strong>${min}分</strong>！（出発: ${dep}）</div>`);
+    }
+  });
+
+  // Overdue tasks
+  const overdueCount = tasks.filter(t => t.status !== 'done' && isOverdue(t.due)).length;
+  if (overdueCount > 0) {
+    alerts.push(`<div class="alert alert-warning">⚠️ 期限超過のタスクが <strong>${overdueCount}件</strong> あります</div>`);
+  }
+
+  // Callback today
+  const cbToday = calls.filter(c => c.result === 'callback' && c.callbackDate && c.callbackDate.slice(0,10) === today).length;
+  if (cbToday > 0) {
+    alerts.push(`<div class="alert alert-info">🔄 本日コールバック予定 <strong>${cbToday}件</strong></div>`);
+  }
+
+  document.getElementById('dashAlerts').innerHTML = alerts.join('');
+}
+
+function renderDashToday() {
+  const today = todayStr();
+  const todayAppts = appointments
+    .filter(a => isToday(a.date))
+    .sort((a,b) => (a.time||'99:99') > (b.time||'99:99') ? 1 : -1);
+
+  if (todayAppts.length === 0) {
+    document.getElementById('dashToday').innerHTML = '<div class="empty" style="padding:20px;"><div class="empty-icon" style="font-size:28px;">📭</div><div class="empty-text">本日のアポイントはありません</div></div>';
+    return;
+  }
+
+  const items = todayAppts.map(a => {
+    const dep = a.travelMin ? calcDepart(a.date, a.time, a.travelMin) : null;
+    const prod = a.product ? PRODUCTS[a.product] : null;
+    const statusColors = { plan: 'var(--primary)', done: 'var(--success)', cancel: 'var(--t3)' };
+    return `
+      <div class="schedule-item" onclick="openApptModal('${a.id}')">
+        <div class="sched-time">${a.time||'--:--'}</div>
+        <div class="sched-dot" style="background:${statusColors[a.status]||'var(--primary)'}"></div>
+        <div class="sched-body">
+          <div class="sched-title">${escH(a.title)}</div>
+          <div class="sched-sub">
+            ${a.client ? escH(a.client) + ' &nbsp;' : ''}
+            ${a.location ? '📍 ' + escH(a.location) : ''}
+            ${dep ? `<br>🚃 出発 <strong>${dep}</strong>` : ''}
+            ${prod ? `<br><span class="chip ${prod.chipClass}" style="font-size:10px;">${escH(prod.name)}</span>` : ''}
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  document.getElementById('dashToday').innerHTML = items;
+}
+
+function renderDashAfter() {
+  const incomplete = contracts.filter(c => {
+    return c.tasks && c.tasks.some(t => !t.done);
+  }).slice(0, 5);
+
+  if (incomplete.length === 0) {
+    document.getElementById('dashAfter').innerHTML = '<div class="empty" style="padding:16px 20px;"><div class="empty-text" style="font-size:13px;color:var(--t3);">未完了の事後作業はありません ✅</div></div>';
+    return;
+  }
+
+  document.getElementById('dashAfter').innerHTML = incomplete.map(c => {
+    const done = c.tasks.filter(t => t.done).length;
+    const total = c.tasks.length;
+    const pct = Math.round(done / total * 100);
+    const prod = c.product ? PRODUCTS[c.product] : null;
+    return `
+      <div class="list-item" onclick="showPage('after',document.getElementById('navAfter'))">
+        <div class="list-item-body">
+          <div class="list-item-title">${escH(c.clientName)}</div>
+          <div class="list-item-sub">${prod ? escH(prod.name) : ''} &nbsp; ${done}/${total} 完了</div>
+          <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${pct}%;background:${pct===100?'var(--success)':'var(--primary)'}"></div></div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// =====================
+//  SCHEDULE
+// =====================
+function filterSched(f, btn) {
+  schedFilter = f;
+  document.querySelectorAll('#schedFilterTabs .filter-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderSchedule();
+}
+
+function renderSchedule() {
+  let list = [...appointments].sort((a,b) => `${a.date}T${a.time||'00:00'}` > `${b.date}T${b.time||'00:00'}` ? 1 : -1);
+  const today = todayStr();
+  const weekEnd = thisWeekEnd();
+  if (schedFilter === 'today') list = list.filter(a => a.date === today);
+  else if (schedFilter === 'week') list = list.filter(a => a.date >= today && a.date <= weekEnd);
+  else if (schedFilter === 'plan') list = list.filter(a => a.status === 'plan');
+
+  const el = document.getElementById('schedList');
+  if (list.length === 0) {
+    el.innerHTML = '<div class="empty"><div class="empty-icon">📭</div><div class="empty-text">アポイントがありません</div></div>';
+    return;
+  }
+
+  el.innerHTML = list.map(a => {
+    const dep = a.travelMin ? calcDepart(a.date, a.time, a.travelMin) : null;
+    const prod = a.product ? PRODUCTS[a.product] : null;
+    const statusMap = { plan: ['chip-blue','予定'], done: ['chip-green','完了'], cancel: ['chip-gray','キャンセル'] };
+    const [sc, sl] = statusMap[a.status] || ['chip-gray', a.status];
+    return `
+      <div class="list-item" onclick="openApptModal('${a.id}')">
+        <div class="list-item-body">
+          <div class="list-item-title">${escH(a.title)}</div>
+          <div class="list-item-sub">
+            ${fmtDate(a.date)} ${a.time||''} ${a.client ? ' · ' + escH(a.client) : ''}
+            ${a.location ? '<br>📍 ' + escH(a.location) : ''}
+            ${dep ? `<br>🚃 出発: <strong>${dep}</strong>（移動${a.travelMin}分）` : ''}
+          </div>
+          ${prod ? `<div style="margin-top:4px;"><span class="chip ${prod.chipClass}">${escH(prod.name)}</span></div>` : ''}
+          ${a.location ? `<a href="${googleMapsUrl(a)}" target="_blank" onclick="event.stopPropagation()" class="maps-btn">🗺 Google Maps</a>` : ''}
+        </div>
+        <div class="list-item-right">
+          <span class="chip ${sc}">${sl}</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// =====================
+//  CALLS
+// =====================
+function filterCalls(f, btn) {
+  callFilter = f;
+  document.querySelectorAll('#page-calls .filter-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderCalls();
+}
+
+function renderCalls() {
+  const today = todayStr();
+  const todayCalls = calls.filter(c => c.date === today);
+  const apptToday = todayCalls.filter(c => c.result === 'appt').length;
+
+  document.getElementById('callStats').innerHTML = `
+    <div class="stat-card">
+      <div class="stat-num" style="color:var(--primary)">${todayCalls.length}</div>
+      <div class="stat-label">本日の架電</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num" style="color:var(--success)">${apptToday}</div>
+      <div class="stat-label">本日アポ獲得</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num" style="color:var(--warning)">${calls.filter(c => c.result === 'callback').length}</div>
+      <div class="stat-label">CB待ち</div>
+    </div>
+  `;
+
+  let list = [...calls].sort((a,b) => `${a.date}${a.time}` > `${b.date}${b.time}` ? -1 : 1);
+  if (callFilter === 'today') list = list.filter(c => c.date === today);
+  else if (callFilter === 'appt') list = list.filter(c => c.result === 'appt');
+  else if (callFilter === 'callback') list = list.filter(c => c.result === 'callback');
+
+  const el = document.getElementById('callList');
+  if (list.length === 0) {
+    el.innerHTML = '<div class="empty"><div class="empty-icon">📵</div><div class="empty-text">架電記録がありません</div></div>';
+    return;
+  }
+
+  el.innerHTML = list.map(c => {
+    const res = CALL_RESULTS[c.result] || { label: c.result, chipClass: 'result-absent' };
+    const prod = c.product ? PRODUCTS[c.product] : null;
+    return `
+      <div class="list-item" onclick="openCallModal('${c.id}')">
+        <div style="font-size:20px;padding-top:2px;">${c.result === 'appt' ? '📅' : c.result === 'ng' ? '❌' : c.result === 'callback' ? '🔄' : c.result === 'thinking' ? '🤔' : '📵'}</div>
+        <div class="list-item-body">
+          <div class="list-item-title">${escH(c.clientName)}</div>
+          <div class="list-item-sub">
+            ${fmtDate(c.date)} ${c.time||''}
+            ${prod ? ' · ' + escH(prod.name) : ''}
+            ${c.result === 'callback' && c.callbackDate ? '<br>🔄 CB: ' + c.callbackDate.replace('T',' ').slice(0,16) : ''}
+            ${c.notes ? '<br>' + escH(c.notes.slice(0,40)) : ''}
+          </div>
+        </div>
+        <div class="list-item-right">
+          <span class="chip ${res.chipClass}">${res.label}</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// =====================
+//  TASKS
+// =====================
+function filterTasks(f, btn) {
+  taskFilter = f;
+  document.querySelectorAll('#page-tasks .filter-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderTasks();
+}
+
+function renderTasks() {
+  const priOrder = { high: 0, mid: 1, low: 2 };
+  let list = [...tasks].sort((a,b) => (priOrder[a.priority]||1) - (priOrder[b.priority]||1) || (a.due||'9999') > (b.due||'9999') ? 1 : -1);
+
+  if (taskFilter === 'pending') list = list.filter(t => t.status !== 'done');
+  else if (taskFilter === 'high') list = list.filter(t => t.priority === 'high');
+  else if (taskFilter === 'overdue') list = list.filter(t => t.status !== 'done' && isOverdue(t.due));
+
+  const el = document.getElementById('taskList');
+  if (list.length === 0) {
+    el.innerHTML = '<div class="empty"><div class="empty-icon">✅</div><div class="empty-text">タスクはありません</div></div>';
+    return;
+  }
+
+  const priDot = { high: 'p-high', mid: 'p-mid', low: 'p-low' };
+  const priLabel = { high: '高', mid: '中', low: '低' };
+
+  el.innerHTML = list.map(t => {
+    const isDone = t.status === 'done';
+    const over = !isDone && isOverdue(t.due);
+    const days = t.due ? daysUntil(t.due) : null;
+    return `
+      <div class="list-item" onclick="openTaskModal('${t.id}')">
+        <div class="p-dot ${priDot[t.priority]||'p-mid'}"></div>
+        <div class="list-item-body">
+          <div class="list-item-title" style="${isDone ? 'text-decoration:line-through;color:var(--t3)' : ''}">${escH(t.title)}</div>
+          <div class="list-item-sub">
+            ${t.category ? '<span class="chip chip-gray" style="font-size:10px;">' + escH(t.category) + '</span> &nbsp;' : ''}
+            ${t.due ? `<span class="${over ? 'chip chip-red' : 'chip chip-gray'}" style="font-size:10px;">${over ? '⚠️ 期限超過' : fmtDate(t.due)}${!over && days !== null && days <= 2 ? ` (あと${days}日)` : ''}</span>` : ''}
+          </div>
+        </div>
+        <div class="list-item-right">
+          <div onclick="event.stopPropagation();toggleTask('${t.id}')" style="width:24px;height:24px;border-radius:50%;border:2px solid ${isDone ? 'var(--success)' : 'var(--border)'};background:${isDone ? 'var(--success)' : 'white'};display:flex;align-items:center;justify-content:center;font-size:12px;color:white;cursor:pointer;">${isDone ? '✓' : ''}</div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function toggleTask(id) {
+  const t = tasks.find(x => x.id === id);
+  if (!t) return;
+  t.status = t.status === 'done' ? 'pending' : 'done';
+  save();
+  renderTasks();
+  updateBadges();
+}
+
+// =====================
+//  CONTRACTS (事後作業)
+// =====================
+function filterContracts(f, btn) {
+  contractFilter = f;
+  document.querySelectorAll('#page-after .filter-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderContracts();
+}
+
+function renderContracts() {
+  let list = [...contracts].sort((a,b) => (a.contractDate||'') > (b.contractDate||'') ? -1 : 1);
+
+  if (contractFilter === 'incomplete') list = list.filter(c => c.tasks && c.tasks.some(t => !t.done));
+  else if (contractFilter === 'ikyu') list = list.filter(c => c.product === 'ikyu');
+  else if (contractFilter === 'res') list = list.filter(c => c.product !== 'ikyu');
+
+  const el = document.getElementById('contractList');
+  if (list.length === 0) {
+    el.innerHTML = '<div class="empty"><div class="empty-icon">📋</div><div class="empty-text">事後作業が登録されていません<br><small>＋ボタンから追加してください</small></div></div>';
+    return;
+  }
+
+  el.innerHTML = list.map(c => contractCardHtml(c)).join('');
+}
+
+function contractCardHtml(c) {
+  const prod = c.product ? PRODUCTS[c.product] : null;
+  const taskList = c.tasks || [];
+  const done = taskList.filter(t => t.done).length;
+  const total = taskList.length;
+  const pct = total > 0 ? Math.round(done / total * 100) : 0;
+  const allDone = done === total && total > 0;
+
+  const checkItems = taskList.map(t => `
+    <div class="checklist-item" onclick="toggleContractTask('${c.id}','${t.key}')">
+      <div class="check-box ${t.done ? 'done' : ''}">${t.done ? '✓' : ''}</div>
+      <div class="checklist-label ${t.done ? 'done' : ''}">${escH(t.label)}</div>
+    </div>
+  `).join('');
+
+  return `
+    <div class="contract-card" id="cc-${c.id}">
+      <div class="contract-header" onclick="toggleContractExpand('${c.id}')">
+        <div>
+          <div class="contract-name">${escH(c.clientName)}</div>
+          <div class="contract-sub">${prod ? escH(prod.name) : ''} ${c.contractDate ? '· ' + fmtDate(c.contractDate) : ''}</div>
+          <div class="progress-bar-bg" style="width:160px;margin-top:6px;">
+            <div class="progress-bar-fill" style="width:${pct}%;background:${allDone ? 'var(--success)' : 'var(--primary)'}"></div>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
+          ${prod ? `<span class="chip ${prod.chipClass}">${escH(prod.name)}</span>` : ''}
+          <span class="chip ${allDone ? 'chip-green' : 'chip-yellow'}">${done}/${total}</span>
+          <button class="btn btn-sm btn-secondary" onclick="event.stopPropagation();openContractModal('${c.id}')">編集</button>
+        </div>
+      </div>
+      <div id="ce-${c.id}">
+        ${checkItems}
+        ${c.notes ? `<div style="padding:8px 16px;font-size:12px;color:var(--t3);border-top:1px solid var(--border);">${escH(c.notes)}</div>` : ''}
+      </div>
+    </div>
+  `;
+}
+
+function toggleContractExpand(id) {
+  // Already shown - could collapse, but for simplicity leave expanded
+}
+
+function toggleContractTask(contractId, taskKey) {
+  const c = contracts.find(x => x.id === contractId);
+  if (!c) return;
+  const t = c.tasks.find(x => x.key === taskKey);
+  if (!t) return;
+  t.done = !t.done;
+  save();
+  // Re-render just this card
+  const el = document.getElementById('cc-' + contractId);
+  if (el) el.outerHTML = contractCardHtml(c);
+  updateBadges();
+}
+
+// =====================
+//  APPOINTMENT CRUD
+// =====================
+function openApptModal(id) {
+  clearForm(['apptId','apptTitle','apptClient','apptDate','apptTime','apptLocation','apptFrom','apptTravel','apptNotes']);
+  document.getElementById('apptDate').value = todayStr();
+  document.getElementById('apptTime').value = '10:00';
+  document.getElementById('apptStatus').value = 'plan';
+  document.getElementById('apptProduct').value = '';
+  document.getElementById('apptDelBtn').style.display = 'none';
+  document.getElementById('apptModalTitle').textContent = 'アポイント追加';
+
+  if (id) {
+    const a = appointments.find(x => x.id === id);
+    if (a) {
+      document.getElementById('apptId').value = a.id;
+      document.getElementById('apptTitle').value = a.title || '';
+      document.getElementById('apptClient').value = a.client || '';
+      document.getElementById('apptDate').value = a.date || '';
+      document.getElementById('apptTime').value = a.time || '';
+      document.getElementById('apptLocation').value = a.location || '';
+      document.getElementById('apptFrom').value = a.fromStation || '';
+      document.getElementById('apptTravel').value = a.travelMin || '';
+      document.getElementById('apptStatus').value = a.status || 'plan';
+      document.getElementById('apptProduct').value = a.product || '';
+      document.getElementById('apptNotes').value = a.notes || '';
+      document.getElementById('apptDelBtn').style.display = 'inline-flex';
+      document.getElementById('apptModalTitle').textContent = 'アポイント編集';
+    }
+  }
+  openModal('apptModal');
+}
+
+function saveAppt() {
+  const title = document.getElementById('apptTitle').value.trim();
+  const date = document.getElementById('apptDate').value;
+  if (!title || !date) { alert('件名と日付は必須です'); return; }
+
+  const editId = document.getElementById('apptId').value;
+  const appt = {
+    id: editId || genId(),
+    title,
+    client: document.getElementById('apptClient').value.trim(),
+    date,
+    time: document.getElementById('apptTime').value,
+    location: document.getElementById('apptLocation').value.trim(),
+    fromStation: document.getElementById('apptFrom').value.trim(),
+    travelMin: document.getElementById('apptTravel').value ? parseInt(document.getElementById('apptTravel').value) : null,
+    status: document.getElementById('apptStatus').value,
+    product: document.getElementById('apptProduct').value,
+    notes: document.getElementById('apptNotes').value.trim(),
+  };
+
+  if (editId) {
+    const idx = appointments.findIndex(x => x.id === editId);
+    if (idx >= 0) appointments[idx] = appt;
+  } else {
+    appointments.push(appt);
+  }
+  save(); closeModal('apptModal'); renderPage(currentPage); updateBadges();
+  if (!editId) showGcalToast(appt); // 新規追加時のみ表示
+}
+
+function deleteAppt() {
+  const id = document.getElementById('apptId').value;
+  if (!id || !confirm('削除しますか？')) return;
+  appointments = appointments.filter(a => a.id !== id);
+  save(); closeModal('apptModal'); renderPage(currentPage); updateBadges();
+}
+
+// =====================
+//  GOOGLE CALENDAR
+// =====================
+function gcalEventUrl(appt) {
+  if (!appt.date) return null;
+  const d = appt.date.replace(/-/g, '');
+  let startDt, endDt;
+  if (appt.time) {
+    const t = appt.time.replace(':', '');
+    startDt = `${d}T${t}00`;
+    const end = new Date(`${appt.date}T${appt.time}:00`);
+    end.setHours(end.getHours() + 1);
+    endDt = `${d}T${pad2(end.getHours())}${pad2(end.getMinutes())}00`;
+  } else {
+    startDt = d; endDt = d;
+  }
+  const details = [
+    appt.client      ? `顧客: ${appt.client}` : '',
+    appt.travelMin   ? `移動時間: ${appt.travelMin}分` : '',
+    appt.fromStation ? `出発駅: ${appt.fromStation}` : '',
+    appt.notes       ? `メモ: ${appt.notes}` : '',
+  ].filter(Boolean).join('\n');
+  const p = new URLSearchParams();
+  p.set('text', appt.title || '');
+  p.set('dates', `${startDt}/${endDt}`);
+  if (appt.location) p.set('location', appt.location);
+  if (details) p.set('details', details);
+  p.set('ctz', 'Asia/Tokyo');
+  return `https://calendar.google.com/calendar/r/eventedit?${p.toString()}`;
+}
+
+function showGcalToast(appt) {
+  const url = gcalEventUrl(appt);
+  if (!url) return;
+  const old = document.getElementById('gcalToast');
+  if (old) old.remove();
+  const toast = document.createElement('div');
+  toast.id = 'gcalToast';
+  toast.className = 'gcal-toast';
+  toast.innerHTML = `
+    <div style="font-size:13px;font-weight:600;margin-bottom:6px;">✅ アポイントを保存しました</div>
+    <div style="font-size:12px;color:rgba(255,255,255,0.65);margin-bottom:10px;">${escH(appt.title)}　${appt.date ? fmtDate(appt.date) : ''}　${appt.time || ''}</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <a href="${url}" target="_blank" class="gcal-btn gcal-btn-primary" onclick="document.getElementById('gcalToast').remove()">📅 Googleカレンダーに追加</a>
+      <button class="gcal-btn gcal-btn-secondary" onclick="document.getElementById('gcalToast').remove()">あとで</button>
+    </div>
+  `;
+  document.body.appendChild(toast);
+  setTimeout(() => { const t = document.getElementById('gcalToast'); if (t) t.remove(); }, 15000);
+}
+
+// =====================
+//  CALL CRUD
+// =====================
+let selectedCallResult = '';
+
+function openCallModal(id) {
+  clearForm(['callId','callClient','callDate','callTime','callNotes','callCallbackDate']);
+  document.getElementById('callDate').value = todayStr();
+  document.getElementById('callTime').value = nowTime();
+  document.getElementById('callProduct').value = '';
+  document.getElementById('callDelBtn').style.display = 'none';
+  document.getElementById('callModalTitle').textContent = '架電記録';
+  document.getElementById('callbackDateGroup').style.display = 'none';
+  selectedCallResult = '';
+  document.querySelectorAll('.result-opt').forEach(b => b.className = 'result-opt');
+
+  if (id) {
+    const c = calls.find(x => x.id === id);
+    if (c) {
+      document.getElementById('callId').value = c.id;
+      document.getElementById('callClient').value = c.clientName || '';
+      document.getElementById('callDate').value = c.date || '';
+      document.getElementById('callTime').value = c.time || '';
+      document.getElementById('callProduct').value = c.product || '';
+      document.getElementById('callNotes').value = c.notes || '';
+      document.getElementById('callCallbackDate').value = c.callbackDate || '';
+      selectedCallResult = c.result || '';
+      if (c.result) {
+        const btn = document.querySelector(`.result-opt[data-v="${c.result}"]`);
+        if (btn) btn.className = `result-opt selected-${c.result}`;
+        if (c.result === 'callback') document.getElementById('callbackDateGroup').style.display = 'block';
+      }
+      document.getElementById('callDelBtn').style.display = 'inline-flex';
+      document.getElementById('callModalTitle').textContent = '架電記録 編集';
+    }
+  }
+  openModal('callModal');
+}
+
+function selectResult(btn) {
+  const v = btn.getAttribute('data-v');
+  document.querySelectorAll('.result-opt').forEach(b => b.className = 'result-opt');
+  btn.className = `result-opt selected-${v}`;
+  selectedCallResult = v;
+  document.getElementById('callbackDateGroup').style.display = v === 'callback' ? 'block' : 'none';
+}
+
+function saveCall() {
+  const clientName = document.getElementById('callClient').value.trim();
+  if (!clientName) { alert('顧客名は必須です'); return; }
+  if (!selectedCallResult) { alert('結果を選択してください'); return; }
+
+  const editId = document.getElementById('callId').value;
+  const call = {
+    id: editId || genId(),
+    clientName,
+    date: document.getElementById('callDate').value,
+    time: document.getElementById('callTime').value,
+    result: selectedCallResult,
+    callbackDate: document.getElementById('callCallbackDate').value || null,
+    product: document.getElementById('callProduct').value,
+    notes: document.getElementById('callNotes').value.trim(),
+  };
+
+  if (editId) {
+    const idx = calls.findIndex(x => x.id === editId);
+    if (idx >= 0) calls[idx] = call;
+  } else {
+    calls.push(call);
+  }
+  save(); closeModal('callModal'); renderPage(currentPage); updateBadges();
+}
+
+function deleteCall() {
+  const id = document.getElementById('callId').value;
+  if (!id || !confirm('削除しますか？')) return;
+  calls = calls.filter(c => c.id !== id);
+  save(); closeModal('callModal'); renderPage(currentPage);
+}
+
+// =====================
+//  TASK CRUD
+// =====================
+function openTaskModal(id) {
+  clearForm(['taskId','taskTitle','taskDue','taskNotes']);
+  document.getElementById('taskPriority').value = 'mid';
+  document.getElementById('taskCategory').value = '商談準備';
+  document.getElementById('taskStatus').value = 'pending';
+  document.getElementById('taskDelBtn').style.display = 'none';
+  document.getElementById('taskModalTitle').textContent = 'タスク追加';
+
+  if (id) {
+    const t = tasks.find(x => x.id === id);
+    if (t) {
+      document.getElementById('taskId').value = t.id;
+      document.getElementById('taskTitle').value = t.title || '';
+      document.getElementById('taskDue').value = t.due || '';
+      document.getElementById('taskPriority').value = t.priority || 'mid';
+      document.getElementById('taskCategory').value = t.category || 'その他';
+      document.getElementById('taskStatus').value = t.status || 'pending';
+      document.getElementById('taskNotes').value = t.notes || '';
+      document.getElementById('taskDelBtn').style.display = 'inline-flex';
+      document.getElementById('taskModalTitle').textContent = 'タスク編集';
+    }
+  }
+  openModal('taskModal');
+}
+
+function saveTask() {
+  const title = document.getElementById('taskTitle').value.trim();
+  if (!title) { alert('タスク名は必須です'); return; }
+
+  const editId = document.getElementById('taskId').value;
+  const task = {
+    id: editId || genId(),
+    title,
+    due: document.getElementById('taskDue').value || null,
+    priority: document.getElementById('taskPriority').value,
+    category: document.getElementById('taskCategory').value,
+    status: document.getElementById('taskStatus').value,
+    notes: document.getElementById('taskNotes').value.trim(),
+  };
+
+  if (editId) {
+    const idx = tasks.findIndex(x => x.id === editId);
+    if (idx >= 0) tasks[idx] = task;
+  } else {
+    tasks.push(task);
+  }
+  save(); closeModal('taskModal'); renderPage(currentPage); updateBadges();
+}
+
+function deleteTask() {
+  const id = document.getElementById('taskId').value;
+  if (!id || !confirm('削除しますか？')) return;
+  tasks = tasks.filter(t => t.id !== id);
+  save(); closeModal('taskModal'); renderPage(currentPage); updateBadges();
+}
+
+// =====================
+//  CONTRACT CRUD
+// =====================
+function openContractModal(id) {
+  clearForm(['contractId','contractClient','contractDate','contractNotes']);
+  document.getElementById('contractProduct').value = '';
+  document.getElementById('contractTaskPreview').innerHTML = '';
+  document.getElementById('contractDelBtn').style.display = 'none';
+  document.getElementById('contractModalTitle').textContent = '事後作業 新規登録';
+  document.getElementById('contractDate').value = todayStr();
+
+  if (id) {
+    const c = contracts.find(x => x.id === id);
+    if (c) {
+      document.getElementById('contractId').value = c.id;
+      document.getElementById('contractClient').value = c.clientName || '';
+      document.getElementById('contractProduct').value = c.product || '';
+      document.getElementById('contractDate').value = c.contractDate || '';
+      document.getElementById('contractNotes').value = c.notes || '';
+      document.getElementById('contractDelBtn').style.display = 'inline-flex';
+      document.getElementById('contractModalTitle').textContent = '事後作業 編集';
+      updateContractTemplate();
+    }
+  }
+  openModal('contractModal');
+}
+
+function updateContractTemplate() {
+  const product = document.getElementById('contractProduct').value;
+  const preview = document.getElementById('contractTaskPreview');
+  if (!product) { preview.innerHTML = ''; return; }
+
+  const prod = PRODUCTS[product];
+  const type = prod ? prod.type : null;
+  const tmpl = type ? TASK_TEMPLATES[type] : null;
+
+  if (!tmpl) { preview.innerHTML = ''; return; }
+
+  preview.innerHTML = `
+    <div style="background:var(--bg);border-radius:8px;padding:10px 12px;font-size:12px;">
+      <div style="font-weight:700;color:var(--t2);margin-bottom:6px;">生成されるタスク（${escH(prod.name)}）:</div>
+      ${tmpl.map(t => `<div style="padding:3px 0;color:var(--t1);">✓ ${escH(t)}</div>`).join('')}
+    </div>
+  `;
+}
+
+function saveContract() {
+  const clientName = document.getElementById('contractClient').value.trim();
+  const product = document.getElementById('contractProduct').value;
+  if (!clientName || !product) { alert('店舗名と商材は必須です'); return; }
+
+  const editId = document.getElementById('contractId').value;
+  const prod = PRODUCTS[product];
+  const type = prod ? prod.type : null;
+  const tmpl = type ? TASK_TEMPLATES[type] : [];
+
+  let contractTasks;
+  if (editId) {
+    // Keep existing task completion status
+    const existing = contracts.find(x => x.id === editId);
+    if (existing) {
+      contractTasks = tmpl.map((label, i) => {
+        const key = 'task_' + i;
+        const ex = existing.tasks ? existing.tasks.find(t => t.label === label) : null;
+        return { key, label, done: ex ? ex.done : false };
+      });
+    } else {
+      contractTasks = tmpl.map((label, i) => ({ key: 'task_' + i, label, done: false }));
+    }
+  } else {
+    contractTasks = tmpl.map((label, i) => ({ key: 'task_' + i, label, done: false }));
+  }
+
+  const contract = {
+    id: editId || genId(),
+    clientName,
+    product,
+    contractDate: document.getElementById('contractDate').value,
+    notes: document.getElementById('contractNotes').value.trim(),
+    tasks: contractTasks,
+  };
+
+  if (editId) {
+    const idx = contracts.findIndex(x => x.id === editId);
+    if (idx >= 0) contracts[idx] = contract;
+  } else {
+    contracts.push(contract);
+  }
+  save(); closeModal('contractModal'); renderPage(currentPage); updateBadges();
+}
+
+function deleteContract() {
+  const id = document.getElementById('contractId').value;
+  if (!id || !confirm('削除しますか？')) return;
+  contracts = contracts.filter(c => c.id !== id);
+  save(); closeModal('contractModal'); renderPage(currentPage); updateBadges();
+}
+
+// =====================
+//  FAB
+// =====================
+function openFab() {
+  openModal('fabMenu');
+}
+
+// =====================
+//  MODALS
+// =====================
+function openModal(id) {
+  document.getElementById(id).classList.add('open');
+}
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+}
+document.querySelectorAll('.modal-overlay').forEach(o => {
+  o.addEventListener('click', e => { if (e.target === o) o.classList.remove('open'); });
+});
+
+function clearForm(ids) {
+  ids.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+}
+
+// =====================
+//  BADGES
+// =====================
+function updateBadges() {
+  // Tasks overdue
+  const overdueCount = tasks.filter(t => t.status !== 'done' && isOverdue(t.due)).length;
+  setBadge('navTasks', overdueCount);
+
+  // Today's appointments
+  const todayApptCount = appointments.filter(a => a.status === 'plan' && isToday(a.date)).length;
+  setBadge('navSchedule', todayApptCount);
+
+  // Incomplete contracts
+  const incompleteContracts = contracts.filter(c => c.tasks && c.tasks.some(t => !t.done)).length;
+  setBadge('navAfter', incompleteContracts);
+}
+
+function setBadge(navId, count) {
+  const nav = document.getElementById(navId);
+  if (!nav) return;
+  let badge = nav.querySelector('.nav-badge');
+  if (count > 0) {
+    if (!badge) { badge = document.createElement('div'); badge.className = 'nav-badge'; nav.appendChild(badge); }
+    badge.textContent = count;
+  } else if (badge) {
+    badge.remove();
+  }
+}
+
+// =====================
+//  NOTIFICATIONS
+// =====================
+function requestNotifPermission() {
+  const isSecure = location.protocol === 'https:' || location.hostname === 'localhost';
+  if (!('Notification' in window)) {
+    alert('このブラウザは通知をサポートしていません');
+    return;
+  }
+  if (!isSecure) {
+    alert('⚠️ 通知にはHTTPS環境が必要です。\n\nfile://からはiPhoneへの通知は届きません。\nPCのブラウザでのみ、タブが開いている間は通知が届きます。\n\n詳しくは ⚙️設定 をご確認ください。');
+    updateNotifStatusBox();
+    return;
+  }
+  Notification.requestPermission().then(perm => {
+    updateNotifStatusBox();
+    if (perm === 'granted') {
+      new Notification('SalesHelper Pro', { body: '通知が有効になりました ✅' });
+    }
+  });
+}
+
+function updateNotifStatusBox() {
+  const box = document.getElementById('notifStatusDetail');
+  if (!box) return;
+  const isSecure = location.protocol === 'https:' || location.hostname === 'localhost';
+  if (!('Notification' in window)) {
+    box.innerHTML = '<div class="info-box info-box-err">❌ このブラウザは通知をサポートしていません</div>';
+  } else if (!isSecure) {
+    box.innerHTML = '<div class="info-box info-box-err">❌ <strong>現在の状態：通知は届きません</strong><br>ローカルファイル（file://）環境のため、iPhoneへの通知は動作しません。PCのブラウザ限定で、タブを開いたままの場合のみ通知が届きます。</div>';
+  } else if (Notification.permission === 'granted') {
+    box.innerHTML = '<div class="info-box info-box-ok">✅ <strong>通知が有効です</strong><br>HTTPS環境 + 通知許可済みです。</div>';
+  } else if (Notification.permission === 'denied') {
+    box.innerHTML = '<div class="info-box info-box-err">❌ <strong>通知がブロックされています</strong><br>ブラウザのサイト設定から通知を許可してください。</div>';
+  } else {
+    box.innerHTML = '<div class="info-box info-box-info">ℹ️ 通知はまだ許可されていません。下のボタンで許可できます。</div>';
+  }
+}
+
+function checkDepartureNotifications() {
+  if (Notification.permission !== 'granted') return;
+  const today = todayStr();
+
+  appointments.filter(a => a.status === 'plan' && a.date === today && a.travelMin).forEach(a => {
+    const dep = calcDepart(a.date, a.time, a.travelMin);
+    if (!dep) return;
+    const minUntil = minutesUntil(a.date, dep);
+    if (minUntil === null) return;
+
+    const key30 = a.id + '_30';
+    const key10 = a.id + '_10';
+
+    if (minUntil <= 30 && minUntil > 25 && !notifiedSet.has(key30)) {
+      new Notification('🚃 出発30分前', {
+        body: `${a.title}\n出発時刻: ${dep}\n📍 ${a.location || ''}`,
+        tag: key30
+      });
+      notifiedSet.add(key30);
+      save();
+    }
+    if (minUntil <= 10 && minUntil > 6 && !notifiedSet.has(key10)) {
+      new Notification('🚨 出発10分前！', {
+        body: `${a.title}\n今すぐ出発してください！\n出発: ${dep}`,
+        tag: key10
+      });
+      notifiedSet.add(key10);
+      save();
+    }
+  });
+}
+
+setInterval(checkDepartureNotifications, 60000);
+setInterval(() => { if (currentPage === 'home') renderHome(); }, 30000);
+
+// =====================
+//  INIT
+// =====================
+function init() {
+  // Show PWA hint on first visit
+  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+  const isStandalone = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
+  if (isMobile && !isStandalone) {
+    document.getElementById('pwaHint').classList.add('show');
+  }
+
+  updateNotifStatusBox();
+  renderHome();
+  updateBadges();
+}
+
+init();
+</script>
+</body>
+</html>
