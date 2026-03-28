@@ -641,6 +641,39 @@
     .ai-home-msg .warn { color: #FCD34D; font-weight: 700; }
     .ai-home-msg .ok { color: #6EE7B7; font-weight: 600; }
 
+    /* AI loading spinner */
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .ai-spinner {
+      display: inline-block; width: 13px; height: 13px;
+      border: 2px solid rgba(255,255,255,0.3); border-top-color: white;
+      border-radius: 50%; animation: spin 0.75s linear infinite;
+      vertical-align: middle; margin-right: 5px;
+    }
+    /* AI check button */
+    .ai-check-btn {
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.25);
+      color: white; border-radius: 8px;
+      padding: 7px 13px; font-size: 12px; font-weight: 600;
+      cursor: pointer; font-family: inherit; margin-top: 9px;
+      display: inline-flex; align-items: center; gap: 5px;
+      transition: background 0.15s;
+    }
+    .ai-check-btn:active { background: rgba(255,255,255,0.22); }
+    .ai-check-btn:disabled { opacity: 0.5; cursor: default; }
+    .ai-check-btn-hint {
+      font-size: 11px; color: rgba(255,255,255,0.4);
+      margin-top: 8px; display: block;
+    }
+    /* Conflict alert in AI card */
+    .ai-conflict { color: #FCD34D; font-weight: 700; }
+    .ai-travel-warn { color: #FBB040; font-weight: 600; }
+    /* Gemini response text */
+    .ai-gemini-resp {
+      font-size: 12px; line-height: 1.75;
+      white-space: pre-wrap; color: rgba(255,255,255,0.88);
+    }
+
     /* Previous appointment suggestion banner */
     .prev-appt-banner {
       background: #F0F9FF;
@@ -1175,6 +1208,26 @@
 
       <hr style="border:none;border-top:1px solid var(--border);margin:4px 0 20px;">
 
+      <!-- Gemini AI -->
+      <div class="setting-section">
+        <div class="setting-section-title">🤖 AI スケジュール分析（Gemini）</div>
+        <div class="form-group">
+          <label class="form-label">Gemini API Key</label>
+          <input class="form-input" id="geminiApiKey" placeholder="AIza..." style="font-size:12px;" />
+          <div class="form-hint">Google AI StudioでAPIキーを取得（無料）</div>
+        </div>
+        <button class="btn btn-primary btn-full" onclick="saveGeminiKey()" style="margin-bottom:10px;">保存</button>
+        <div class="info-box info-box-info">
+          <strong>APIキーの取得（無料・1分）：</strong><br>
+          1. <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:inherit;">aistudio.google.com</a> を開く<br>
+          2.「APIキーを作成」をクリック<br>
+          3. 生成されたキーをコピーして上欄に貼り付け<br><br>
+          <strong>無料枠：1分あたり15リクエスト / 1日1500件</strong>
+        </div>
+      </div>
+
+      <hr style="border:none;border-top:1px solid var(--border);margin:4px 0 20px;">
+
       <!-- Notifications -->
       <div class="setting-section">
         <div class="setting-section-title">🔔 通知 &amp; Apple Watch</div>
@@ -1365,6 +1418,125 @@ function renderHome() {
   updateBadges();
 }
 
+// =====================
+//  CONFLICT DETECTION (ローカル、API不要)
+// =====================
+function detectScheduleConflicts(date) {
+  const dayAppts = appointments
+    .filter(a => a.date === date && a.status === 'plan' && a.time)
+    .sort((a, b) => timeToMin(a.time) - timeToMin(b.time));
+
+  const conflicts = [];
+  for (let i = 0; i < dayAppts.length; i++) {
+    for (let j = i + 1; j < dayAppts.length; j++) {
+      const a = dayAppts[i];
+      const b = dayAppts[j];
+      const aEnd = timeToMin(a.time) + (a.duration || 60);
+      const bStart = timeToMin(b.time);
+      if (aEnd > bStart) {
+        conflicts.push({ type: 'overlap', a, b, overlapMin: aEnd - bStart });
+      } else {
+        const gap = bStart - aEnd;
+        const needMin = Math.max(a.travelMin || 0, b.travelMin || 0);
+        if (needMin > 0 && gap < needMin) {
+          conflicts.push({ type: 'travel', a, b, gap, needMin });
+        }
+      }
+    }
+  }
+  return conflicts;
+}
+
+// =====================
+//  GEMINI AI INTEGRATION
+// =====================
+let geminiKey = localStorage.getItem('sh2_gemini_key') || '';
+
+function saveGeminiKey() {
+  const key = document.getElementById('geminiApiKey').value.trim();
+  if (!key) { alert('APIキーを入力してください'); return; }
+  geminiKey = key;
+  localStorage.setItem('sh2_gemini_key', key);
+  showToast('🤖 Gemini APIキーを保存しました');
+  closeModal('settingsModal');
+  renderHome();
+}
+
+async function getGeminiAdvice(prompt) {
+  if (!geminiKey) return null;
+  const res = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { maxOutputTokens: 500, temperature: 0.7 }
+      })
+    }
+  );
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err?.error?.message || 'APIエラー ' + res.status);
+  }
+  const data = await res.json();
+  return data.candidates?.[0]?.content?.parts?.[0]?.text || null;
+}
+
+function buildDaySchedulePrompt(date) {
+  const dayAppts = appointments
+    .filter(a => a.date === date && a.status === 'plan')
+    .sort((a, b) => (a.time || '') > (b.time || '') ? 1 : -1);
+  if (!dayAppts.length) return null;
+
+  const d = new Date(date + 'T00:00:00');
+  const dateStr = `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日(${DAYS[d.getDay()]})`;
+
+  const schedText = dayAppts.map(a => {
+    const endT = a.time ? minToTime(timeToMin(a.time) + (a.duration || 60)) : '不明';
+    const dep = a.travelMin ? `出発${calcDepart(a.date, a.time, a.travelMin)}` : '';
+    return [
+      `・${a.time || '時間未定'}〜${endT}「${a.title}」`,
+      a.client    ? `  顧客: ${a.client}` : '',
+      a.location  ? `  場所: ${a.location}` : '',
+      a.travelMin ? `  移動: ${a.travelMin}分（${dep}）` : '',
+      a.product   ? `  商材: ${PRODUCTS[a.product]?.name || a.product}` : '',
+    ].filter(Boolean).join('\n');
+  }).join('\n\n');
+
+  return `あなたは営業担当者専用のスケジュールアシスタントです。
+以下の${dateStr}のアポイントを分析し、問題点と改善案を営業担当者への話しかけ形式で、日本語・箇条書きで簡潔に教えてください（300字以内）。
+
+分析観点：
+① ダブルブッキング（時間重複）
+② 移動時間を考慮した実現可能性
+③ 具体的な改善提案（時間変更・順序変更など）
+
+【スケジュール】
+${schedText}`;
+}
+
+async function checkScheduleWithGemini(date) {
+  const btn = document.getElementById('aiCheckBtn');
+  const msgEl = document.getElementById('aiHomeMsg');
+  if (!msgEl) return;
+
+  if (btn) { btn.disabled = true; btn.innerHTML = '<span class="ai-spinner"></span>AIが分析中...'; }
+
+  try {
+    const prompt = buildDaySchedulePrompt(date);
+    if (!prompt) { showToast('スケジュールがありません'); return; }
+    const result = await getGeminiAdvice(prompt);
+    if (!result) { showToast('⚙️ 設定からGemini APIキーを入力してください'); return; }
+
+    msgEl.innerHTML = `<div class="ai-gemini-resp">${escH(result)}</div>
+      <button class="ai-check-btn" onclick="checkScheduleWithGemini('${date}')" style="margin-top:6px;">🔄 再分析</button>`;
+  } catch(e) {
+    showToast('AI分析エラー: ' + e.message);
+    if (btn) { btn.disabled = false; btn.innerHTML = '🤖 AIに詳しく分析してもらう'; }
+  }
+}
+
 function renderAiHomeInsights() {
   const card = document.getElementById('aiHomeCard');
   const msg = document.getElementById('aiHomeMsg');
@@ -1375,26 +1547,22 @@ function renderAiHomeInsights() {
     .filter(a => a.date === today && a.status === 'plan' && a.time)
     .sort((a, b) => timeToMin(a.time) - timeToMin(b.time));
 
-  if (todayAppts.length === 0) {
-    card.classList.remove('show');
-    return;
-  }
+  if (todayAppts.length === 0) { card.classList.remove('show'); return; }
 
-  const warnings = [];
-  // アポ間の移動時間チェック
-  for (let i = 0; i < todayAppts.length - 1; i++) {
-    const a = todayAppts[i];
-    const b = todayAppts[i + 1];
-    const aEnd = timeToMin(a.time) + (a.duration || 60);
-    const gap = timeToMin(b.time) - aEnd;
-    if (gap < 30) {
-      warnings.push(`<span class="warn">⚠️ ${minToTime(aEnd)}〜${b.time} の移動 ${gap}分</span>（「${escH(a.title.slice(0,10))}」→「${escH(b.title.slice(0,10))}」）`);
-    }
-  }
+  // ローカル競合チェック（API不要）
+  const conflicts = detectScheduleConflicts(today);
+  const hasGemini = !!geminiKey;
 
   let text = '';
-  if (warnings.length > 0) {
-    text = `本日 <strong style="color:white;">${todayAppts.length}件</strong> のアポイント。移動時間に注意が必要です：<br>${warnings.join('<br>')}`;
+  if (conflicts.length > 0) {
+    const lines = conflicts.map(c => {
+      if (c.type === 'overlap') {
+        return `<span class="ai-conflict">⚠️ ダブルブッキング：「${escH(c.a.title.slice(0,12))}」と「${escH(c.b.title.slice(0,12))}」が ${c.overlapMin}分重複</span>`;
+      } else {
+        return `<span class="ai-travel-warn">🚃 移動時間不足：「${escH(c.a.title.slice(0,10))}」→「${escH(c.b.title.slice(0,10))}」（空き${c.gap}分 / 必要${c.needMin}分）</span>`;
+      }
+    });
+    text = `<strong style="color:white;">本日 ${todayAppts.length}件 ／ ${conflicts.length}件の問題を検出</strong><br>${lines.join('<br>')}`;
   } else {
     const now = new Date();
     const upcoming = todayAppts.filter(a => new Date(`${a.date}T${a.time}:00`) > now);
@@ -1403,7 +1571,7 @@ function renderAiHomeInsights() {
       const dep = next.travelMin ? calcDepart(next.date, next.time, next.travelMin) : null;
       const minUntil = dep ? minutesUntil(next.date, dep) : minutesUntil(next.date, next.time);
       if (minUntil !== null && minUntil >= 0 && minUntil <= 60) {
-        text = `<span class="${minUntil <= 20 ? 'warn' : 'ok'}">次のアポまであと ${minUntil}分</span>${dep ? `。出発時刻：<strong style="color:white;">${dep}</strong>` : ''}`;
+        text = `<span class="${minUntil <= 20 ? 'ai-conflict' : 'ok'}">次のアポまであと ${minUntil}分</span>${dep ? `。出発：<strong style="color:white;">${dep}</strong>` : ''}`;
       } else {
         text = `本日 <span class="ok">${todayAppts.length}件</span> のアポイント。スケジュールに問題はありません ✅`;
       }
@@ -1412,7 +1580,11 @@ function renderAiHomeInsights() {
     }
   }
 
-  msg.innerHTML = text;
+  const btnHtml = hasGemini
+    ? `<button class="ai-check-btn" onclick="checkScheduleWithGemini('${today}')" id="aiCheckBtn">🤖 AIに詳しく分析してもらう</button>`
+    : `<span class="ai-check-btn-hint">⚙️ 設定でGemini APIキーを入力するとAI詳細分析が使えます</span>`;
+
+  msg.innerHTML = text + btnHtml;
   card.classList.add('show');
 }
 
@@ -1909,6 +2081,17 @@ function saveAppt() {
     appointments.push(appt);
   }
   save(); closeModal('apptModal'); renderPage(currentPage); updateBadges();
+
+  // 保存後にその日の競合を自動チェック
+  const conflicts = detectScheduleConflicts(appt.date);
+  if (conflicts.length > 0) {
+    const msgs = conflicts.map(c =>
+      c.type === 'overlap'
+        ? `⚠️ ダブルブッキング：「${c.a.title}」と「${c.b.title}」が重複`
+        : `🚃 移動時間不足：「${c.a.title}」→「${c.b.title}」（空き${c.gap}分）`
+    );
+    showToast('📋 ' + msgs[0] + (conflicts.length > 1 ? ` 他${conflicts.length-1}件` : ''));
+  }
 
   // Google Calendar 自動同期
   if (gcalClientId && gcalAccessToken) {
@@ -2661,6 +2844,11 @@ function init() {
     document.getElementById('gcalClientId').value = gcalClientId;
     initGcalAPIs();
     updateGcalStatusUI(!!gcalAccessToken);
+  }
+  // Gemini APIキーを復元
+  if (geminiKey) {
+    const el = document.getElementById('geminiApiKey');
+    if (el) el.value = geminiKey;
   }
   renderHome();
   updateBadges();
